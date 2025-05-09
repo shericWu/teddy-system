@@ -1,0 +1,15 @@
+Creation Operation in Three.js
+
+1. ☑ design stroke drawing canva
+2. ☑ resample the input stroke and form external edges
+3. ☐ perform constrained Delaunay triangulation of the polygon
+    * ☐ what's constrained Delaunay triangulation
+    * ☐ an algorithm for performing constrained Delaunay triangulation
+    * ☐ how to represent a triangle in Three.js (somthing that might need to take into account: its adjacent triangles, the type of the triangle)
+4. ☐ obtained the chordal axis
+5. ☐ prune insignificant branches and obtain the pruned spine
+    * is it necessary?
+6. ☐ make the resulting polygons triangulated
+7. ☐ elevate the verteces of the spine and convert other internal edges to a quarter oval
+8. ☐ sew together the neighboring elevated edges
+9. ☐ copy the resulting mesh to the other side and get the final mesh
