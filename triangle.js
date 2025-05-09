@@ -1,7 +1,8 @@
-class Edge {
-    constructor(p1, p2) {
+export class Edge {
+    constructor(p1, p2, is_external = true) {
         this.p1 = p1;
         this.p2 = p2;
+        this.is_external = is_external;
         this.adjacent_triangles = [null, null];
     }
 
@@ -13,41 +14,82 @@ class Edge {
     }
 }
 
-class Triangle {
+export class Triangle {
     constructor(p1, p2, p3) {
-        this.p1 = p1;
-        this.p2 = p2;
-        this.p3 = p3;
+        this.points = [p1, p2, p3];
+        this.edges = [null, null, null];
         this.adjacent_triangles = [];
+        this.type = null;
     }
 
     getMidpoint() {
         return new THREE.Vector2(
-            (this.p1.x + this.p2.x + this.p3.x) / 3,
-            (this.p1.y + this.p2.y + this.p3.y) / 3
+            (this.points[0].x + this.points[1].x + this.points[2].x) / 3,
+            (this.points[0].y + this.points[1].y + this.points[2].y) / 3
         );
     }
 }
 
-function getTriangles(triangles){
-    let edges = new Map();
-    for (let i = 0; i < triangles.length; i++) {
-        const triangle = triangles[i];
-        const p1_idx = triangle[0], p2_idx = triangle[1], p3_idx = triangle[2];
-        const p1 = points[p1_idx], p2 = points[p2_idx], p3 = points[p3_idx];
-        let triangleObj = new Triangle(p1, p2, p3);
+export function getTriangles(cdt_result, points) {
+    let edgeMap = new Map();
+    let triangles = [];
 
-        if(edges.has((p1_idx, p2_idx))){
-            let edge = edges.get((p1_idx, p2_idx));
-            triangleObj.adjacent_triangles.push(edge.adjacent_triangles[0]);
-            edge.adjacent_triangles[1] = triangleObj;
-            edge.adjacent_triangles[0].adjacent_triangles.push(triangleObj);
+    for (const triangle of cdt_result) {
+        const p = [points[triangle[0]], points[triangle[1]], points[triangle[2]]];
+        let triangleObj = new Triangle(p[0], p[1], p[2]);
+
+        let edgePoints = [[p[0], p[1]], [p[1], p[2]], [p[2], p[0]]];
+
+        for (let i = 0; i < 3; i++) {
+            let [a, b] = edgePoints[i];
+
+            // Use string key to avoid JS tuple pitfalls
+            let key1 = `${a.x},${a.y}|${b.x},${b.y}`;
+            let key2 = `${b.x},${b.y}|${a.x},${a.y}`;
+
+            if (edgeMap.has(key1)) {
+                let edge = edgeMap.get(key1);
+                edge.is_external = false;
+
+                triangleObj.adjacent_triangles.push(edge.adjacent_triangles[0]);
+                edge.adjacent_triangles.push(triangleObj);
+                edge.adjacent_triangles[0].adjacent_triangles.push(triangleObj);
+
+                triangleObj.edges[i] = edge;
+            } else {
+                let edge = new Edge(a, b);
+                edge.adjacent_triangles = [triangleObj];
+                edgeMap.set(key1, edge);
+                edgeMap.set(key2, edge);
+
+                triangleObj.edges[i] = edge;
+            }
+        }
+
+        triangles.push(triangleObj);
+    }
+
+    for(let triangle of triangles){
+        let n_external = 0;
+        for(let i = 0; i < 3; i++){
+            if(triangle.edges[i].is_external){
+                n_external++;
+            }
+        }
+        console.log("n_external", n_external);
+        if(n_external == 2){
+            console.log("terminal triangle", triangle);
+            triangle.type = "terminal";
+        }
+        else if(n_external == 1){
+            console.log("sleeve triangle", triangle);
+            triangle.type = "sleeve";
         }
         else{
-            let edge = new Edge(p1, p2);
-            edges.set((p1_idx, p2_idx), edge);
-            edges.set((p2_idx, p1_idx), edge);
-            edge.adjacent_triangles[0] = triangleObj;
+            console.log("junction triangle", triangle);
+            triangle.type = "junction";
         }
     }
+
+    return triangles;
 }
