@@ -10,5 +10,7 @@ TLDR:
 - Run
     - `$ npx vite`
 
+
 ### Reference:
 - [Teddy: A 3D Drawing System ](https://www-ui.is.s.u-tokyo.ac.jp/~takeo/research/teddy/teddy.htm)
+- [ctd2d](https://github.com/mikolalysenko/cdt2d)

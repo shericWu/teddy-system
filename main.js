@@ -24,7 +24,10 @@ let line;
 /** @type {THREE.BufferGeometry} */
 let geometry;
 
-const LINE_UNIT_LEN = 0.5;
+// const LINE_UNIT_LEN = 0.5;
+const LINE_UNIT_LEN = 2;
+
+import cdt2d from "cdt2d";
 
 init();
 animate();
@@ -114,11 +117,14 @@ function onMouseMove(event) {
 }
 
 function onMouseUp() {
-    if (drawing) {
-        points.push(new THREE.Vector2(points[0].x, points[0].y));
-        updateLine();
-        stopDrawing();
-    }
+    if (!drawing)
+        return;
+    points.push(new THREE.Vector2(points[0].x, points[0].y));
+    updateLine();
+    stopDrawing();
+    const cdt_result = getCDT();
+    showCDT(cdt_result);
+    console.log(cdt_result);
 }
 
 function onMouseLeave() {
@@ -128,6 +134,36 @@ function onMouseLeave() {
 
 function stopDrawing() {
     drawing = false;
+}
+
+function getCDT() {
+    const cdp_points = [];
+    const cdp_edges = [];
+    let i = 0;
+    for (const p of points) {
+        cdp_points.push([p.x, p.y]);
+        if (i > 0)
+            cdp_edges.push([i-1, i]);
+        i += 1;
+    }
+    cdp_edges.push([i-1, 0]);
+    console.log(cdp_points, cdp_edges);
+    return cdt2d(cdp_points, cdp_edges);
+}
+
+function showCDT(cdt_result) {
+    const positions = [];
+    for (const triangle of cdt_result) {
+        positions.push(points[triangle[0]].x, points[triangle[0]].y, 0);
+        positions.push(points[triangle[1]].x, points[triangle[1]].y, 0);
+        positions.push(points[triangle[2]].x, points[triangle[2]].y, 0);
+    }
+    geometry.setAttribute(
+        'position',
+        new THREE.Float32BufferAttribute(positions, 3)
+    );
+    geometry.setDrawRange(0, points.length);
+    geometry.attributes.position.needsUpdate = true;
 }
 
 function updateLine() {
