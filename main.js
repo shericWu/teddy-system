@@ -6,6 +6,7 @@
 import * as THREE from 'three'
 import cdt2d from "cdt2d";
 import { Triangle, Edge, getTriangles } from './triangle.js';
+import { pruneTriangles } from './pruning.js';
 
 /** @type {THREE.Scene} */
 let scene;
@@ -26,7 +27,7 @@ let line;
 /** @type {THREE.BufferGeometry} */
 let line_geometry;
 
-const LINE_UNIT_LEN = 0.5;
+const LINE_UNIT_LEN = 2;
 
 init();
 animate();
@@ -78,8 +79,8 @@ function getMousePosition(event) {
 }
 
 function onMouseDown(event) {
-    while(scene.children.length > 0){ 
-        scene.remove(scene.children[0]); 
+    while(scene.children.length > 0){
+        scene.remove(scene.children[0]);
     }
 
     // Line geometry and material
@@ -107,11 +108,11 @@ function onMouseMove(event) {
     if (len >= 1) {
         const a1 = points[len - 1];
         const a2 = newPt;
-        
+
         if (a2.distanceTo(a1) < LINE_UNIT_LEN) {
             return;
         }
-        
+
         for (let i = 0; i < len - 2; i++) {
             const b1 = points[i];
             const b2 = points[i + 1];
@@ -141,9 +142,9 @@ function isValid() {
 function createMeshModel(points){
     const cdt_result = getCDT();
     // showCDT(cdt_result);
-    const triangles = getTriangles(cdt_result, points);
+    var triangles = getTriangles(cdt_result, points);
     showTriangles(triangles);
-    console.log(cdt_result);
+    pruneTriangles(triangles);
 }
 
 function onMouseUp() {
@@ -235,10 +236,41 @@ function showTriangles(triangles) {
             const mesh = new THREE.Mesh(geometry, material);
             scene.add(mesh);
         }
-        else{
+        else if (triangle.type === 'junction') {
             const material = new THREE.MeshBasicMaterial({ color: 0x00ffff });
             const mesh = new THREE.Mesh(geometry, material);
             scene.add(mesh);
+        }
+        else{
+            continue;
+        }
+        // draw the triangle's edges
+        const lineMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
+        const lineGeometry = new THREE.BufferGeometry();
+        lineGeometry.setAttribute(
+            'position',
+            new THREE.Float32BufferAttribute(positions, 3)
+        );
+        const line = new THREE.Line(lineGeometry, lineMaterial);
+        scene.add(line);
+    }
+    for (const triangle of triangles) {
+        const positions = [];
+        for (const point of triangle.points) {
+            positions.push(point.x, point.y, 0);
+        }
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute(
+            'position',
+            new THREE.Float32BufferAttribute(positions, 3)
+        );
+        if (triangle.type === 'fan') {
+            const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+            const mesh = new THREE.Mesh(geometry, material);
+            scene.add(mesh);
+        }
+        else{
+            continue;
         }
         // draw the triangle's edges
         const lineMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
