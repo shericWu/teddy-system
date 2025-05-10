@@ -98,9 +98,10 @@ function onMouseDown(event) {
 }
 
 function onMouseMove(event) {
+    const pos3 = getMousePosition(event);
+    document.getElementById("mousePos").innerHTML = `(${pos3.x.toFixed(2)}, ${pos3.y.toFixed(2)})`;
     if (!drawing)
         return;
-    const pos3 = getMousePosition(event);
     const newPt = new THREE.Vector2(pos3.x, pos3.y);
 
     // Check distance and self-intersection
@@ -144,7 +145,8 @@ function createMeshModel(points){
     // showCDT(cdt_result);
     var triangles = getTriangles(cdt_result, points);
     showTriangles(triangles);
-    pruneTriangles(triangles);
+    triangles = pruneTriangles(triangles);
+    showTriangles(triangles);
 }
 
 function onMouseUp() {

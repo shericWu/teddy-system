@@ -19,11 +19,11 @@ function findEndEdge(current_edge, triangle) {
     console.log(triangle.edges[0].type, triangle.edges[1].type, triangle.edges[2].type);
     for (let i = 0; i < triangle.edges.length; i++) {
         let edge = triangle.edges[i];
-        if (edge.type == 'internal' && edge != current_edge) {
+        if ((edge.type == 'internal' || edge.type == 'fan') && edge != current_edge) {
             return [edge, i];
         }
     }
-    return null, -1;
+    return [null, -1];
 }
 
 function updatePoints(points, triangle){
@@ -47,7 +47,7 @@ export function pruneTriangles(triangles) {
     let prunedTriangles = [];
     let toDelTriangles = [];
     for (let triangle of triangles) {
-        if (!triangle.type == 'terminal') {
+        if (triangle.type !== 'terminal') {
             continue;
         }
 
@@ -62,15 +62,18 @@ export function pruneTriangles(triangles) {
         points.unshift(triangle.points[(idx + 2) % 3]);
 
         let current_triangle = triangle;
-        while(current_triangle.type !== 'junction' && !pointOutside(points, end_edge)) {
+        while(!pointOutside(points, end_edge)) {
             toDelTriangles.push(current_triangle);
-            current_triangle = (end_edge.adjacent_triangles[0] == current_triangle) ?
-                    end_edge.adjacent_triangles[1] : end_edge.adjacent_triangless[0];
+            current_triangle = (end_edge.adjacent_triangles[0] == current_triangle)? end_edge.adjacent_triangles[1] : end_edge.adjacent_triangles[0];
 
             console.log("Current triangle: ", current_triangle);
 
-            end_edge, idx = findEndEdge(end_edge, current_triangle);
+            if(current_triangle.type == 'junction' || end_edge.type == 'fan')
+                break;
+
+            [end_edge, idx] = findEndEdge(end_edge, current_triangle);
             updatePoints(points, current_triangle);
+            console.log("End edge is: ", end_edge);
         }
 
         let center = (current_triangle.type == 'junction') ? current_triangle.getMidpoint() : end_edge.getMidpoint();
