@@ -24,7 +24,7 @@ let points = [];
 let line;
 
 /** @type {THREE.BufferGeometry} */
-let geometry;
+let line_geometry;
 
 const LINE_UNIT_LEN = 0.5;
 
@@ -48,9 +48,9 @@ function init() {
     document.body.appendChild(renderer.domElement);
 
     // // Line geometry and material
-    // geometry = new THREE.BufferGeometry();
+    // line_geometry = new THREE.BufferGeometry();
     // const material = new THREE.LineBasicMaterial({ color: 0xb7bdf8 });
-    // line = new THREE.LineSegments(geometry, material);
+    // line = new THREE.LineSegments(line_geometry, material);
     // scene.add(line);
 
     // Event listeners
@@ -83,9 +83,9 @@ function onMouseDown(event) {
     }
 
     // Line geometry and material
-    geometry = new THREE.BufferGeometry();
+    line_geometry = new THREE.BufferGeometry();
     const material = new THREE.LineBasicMaterial({ color: 0xb7bdf8 });
-    line = new THREE.LineSegments(geometry, material);
+    line = new THREE.LineSegments(line_geometry, material);
     scene.add(line);
 
     drawing = true;
@@ -138,6 +138,14 @@ function isValid() {
     return true;
 }
 
+function createMeshModel(points){
+    const cdt_result = getCDT();
+    // showCDT(cdt_result);
+    const triangles = getTriangles(cdt_result, points);
+    showTriangles(triangles);
+    console.log(cdt_result);
+}
+
 function onMouseUp() {
     if (!drawing)
         return;
@@ -149,11 +157,7 @@ function onMouseUp() {
     points.push(new THREE.Vector2(points[0].x, points[0].y));
     updateLine();
     stopDrawing();
-    const cdt_result = getCDT();
-    // showCDT(cdt_result);
-    const triangles = getTriangles(cdt_result, points);
-    showTriangles(triangles);
-    console.log(cdt_result);
+    createMeshModel(points);
 }
 
 function onMouseLeave() {
@@ -202,12 +206,12 @@ function showCDT(cdt_result) {
         positions.push(points[triangle[2]].x, points[triangle[2]].y, 0);
         positions.push(points[triangle[0]].x, points[triangle[0]].y, 0);
     }
-    geometry.setAttribute(
+    line_geometry.setAttribute(
         'position',
         new THREE.Float32BufferAttribute(positions, 3)
     );
-    geometry.setDrawRange(0, positions.length);
-    geometry.attributes.position.needsUpdate = true;
+    line_geometry.setDrawRange(0, positions.length);
+    line_geometry.attributes.position.needsUpdate = true;
 }
 
 function showTriangles(triangles) {
@@ -255,12 +259,12 @@ function updateLine() {
         positions.push(points[i].x, points[i].y, 0);
         positions.push(points[i + 1].x, points[i + 1].y, 0);
     }
-    geometry.setAttribute(
+    line_geometry.setAttribute(
         'position',
         new THREE.Float32BufferAttribute(positions, 3)
     );
-    geometry.setDrawRange(0, positions.length);
-    geometry.attributes.position.needsUpdate = true;
+    line_geometry.setDrawRange(0, positions.length);
+    line_geometry.attributes.position.needsUpdate = true;
 }
 
 // Line segment intersection test in 2D

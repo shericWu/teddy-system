@@ -1,3 +1,15 @@
+// export class Point {
+//     constructor(pos) {
+//         this.x = pos.x;
+//         this.y = pos.y;
+//         this.adjancent_points = [];
+//     }
+
+//     distanceTo(other) {
+//         return Math.sqrt(Math.pow(this.x - other.x, 2) + Math.pow(this.y - other.y, 2));
+//     }
+// }
+
 export class Edge {
     constructor(p1, p2, is_external = true) {
         this.p1 = p1;
@@ -38,7 +50,7 @@ export function getTriangles(cdt_result, points) {
         const p = [points[triangle[0]], points[triangle[1]], points[triangle[2]]];
         let triangleObj = new Triangle(p[0], p[1], p[2]);
 
-        let edgePoints = [[p[0], p[1]], [p[1], p[2]], [p[2], p[0]]];
+        let edgePoints = [[p[1], p[2]], [p[2], p[0]], [p[1], p[2]]];
 
         for (let i = 0; i < 3; i++) {
             let [a, b] = edgePoints[i];
