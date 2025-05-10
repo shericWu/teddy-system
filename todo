@@ -3,9 +3,8 @@ Creation Operation in Three.js
 1. ☑ design stroke drawing canva
 2. ☑ resample the input stroke and form external edges
 3. ☑ perform constrained Delaunay triangulation of the polygon+
-4. ☐ obtained the chordal axis
-5. ☐ prune insignificant branches and obtain the pruned spine
-    * is it necessary?
+4. ☑ obtained the chordal axis
+5. ☑ prune insignificant branches and obtain the pruned spine
 6. ☐ make the resulting polygons triangulated
 7. ☐ elevate the verteces of the spine and convert other internal edges to a quarter oval
 8. ☐ sew together the neighboring elevated edges

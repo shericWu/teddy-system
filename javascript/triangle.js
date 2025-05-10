@@ -16,6 +16,7 @@ export class Edge {
         this.p1 = p1;
         this.p2 = p2;
         this.type = type;
+        this.is_pruned = false;
         this.adjacent_triangles = [];
     }
 

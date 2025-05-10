@@ -66,18 +66,22 @@ export function pruneTriangles(triangles) {
             toDelTriangles.push(current_triangle);
             current_triangle = (end_edge.adjacent_triangles[0] == current_triangle)? end_edge.adjacent_triangles[1] : end_edge.adjacent_triangles[0];
 
-            console.log("Current triangle: ", current_triangle);
+            // console.log("Current triangle: ", current_triangle);
 
             if(current_triangle.type == 'junction' || end_edge.type == 'fan')
                 break;
 
             [end_edge, idx] = findEndEdge(end_edge, current_triangle);
             updatePoints(points, current_triangle);
-            console.log("End edge is: ", end_edge);
+            // console.log("End edge is: ", end_edge);
         }
+
+        if(current_triangle.type == 'junction')
+            end_edge.is_pruned = true;
 
         let center = (current_triangle.type == 'junction') ? current_triangle.getMidpoint() : end_edge.getMidpoint();
         if(current_triangle.type !== 'junction') {
+            toDelTriangles.push(current_triangle);
             if(end_edge.adjacent_triangles[0] == current_triangle)
                 current_triangle = end_edge.adjacent_triangles[1];
             else
