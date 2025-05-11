@@ -1,15 +1,4 @@
 import * as THREE from 'three';
-// export class Point {
-//     constructor(pos) {
-//         this.x = pos.x;
-//         this.y = pos.y;
-//         this.adjancent_points = [];
-//     }
-
-//     distanceTo(other) {
-//         return Math.sqrt(Math.pow(this.x - other.x, 2) + Math.pow(this.y - other.y, 2));
-//     }
-// }
 
 export class Edge {
     constructor(p1, p2, type = 'external') {

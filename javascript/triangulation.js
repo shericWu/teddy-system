@@ -1,17 +1,13 @@
 import * as THREE from 'three'
 import { Triangle, Edge } from './triangle.js'
 
-var id_count = 0;
-
 export class Point {
     constructor(pos, type = 'external') {
-        this.x = pos.x;
-        this.y = pos.y;
-        this.z = pos.z;
+        this.x = pos.x ?? 0;
+        this.y = pos.y ?? 0;
+        this.z = pos.z ?? 0;
         this.type = type;
         this.adjacent_points = [];
-        this.id = id_count;
-        id_count -=- 1;
     }
 
     distanceTo(other) {
@@ -31,7 +27,6 @@ export function triangulate(triangles){
     resulting_triangulation = [];
     new_edges = new Map();
     new_points = new Map();
-    id_count = 0;
     let spine = [];
     for (let triangle of triangles){
         if(triangle.type == 'sleeve')

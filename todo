@@ -5,7 +5,7 @@ Creation Operation in Three.js
 3. ☑ perform constrained Delaunay triangulation of the polygon+
 4. ☑ obtained the chordal axis
 5. ☑ prune insignificant branches and obtain the pruned spine
-6. ☐ make the resulting polygons triangulated
+6. ☑ make the resulting polygons triangulated
 7. ☐ elevate the verteces of the spine and convert other internal edges to a quarter oval
 8. ☐ sew together the neighboring elevated edges
 9. ☐ copy the resulting mesh to the other side and get the final mesh

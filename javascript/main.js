@@ -8,6 +8,7 @@ import { Triangle, Edge, getTriangles } from './triangle.js';
 import { pruneTriangles } from './pruning.js';
 import { getCDT, showCDT } from './cdt.js';
 import { triangulate, Point } from './triangulation.js';
+import { inflate } from './inflation.js';
 
 /** @type {THREE.Scene} */
 let scene;
@@ -147,12 +148,37 @@ function createMeshModel(points){
     var triangles = getTriangles(cdt_result, points);
     // showTriangles(triangles);
     triangles = pruneTriangles(triangles);
-    showTriangles(triangles);
+    // showTriangles(triangles);
     var spine, triangulation;
     [spine, triangulation] = triangulate(triangles);
-    console.log(triangulation);
+    // console.log(triangulation);
     showTriangles(triangulation);
-    showSpine(spine);
+    let geometry_positions, geometry_faces;
+    [geometry_positions, geometry_faces] = inflate(triangulation, spine);
+    // showSpine(spine);
+    // showTriangles(triangulation);
+
+    const geometry = new THREE.BufferGeometry();
+    
+    geometry.setAttribute('position', new THREE.BufferAttribute( new Float32Array(geometry_positions), 3));
+    geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(geometry_faces), 1));
+
+    geometry.computeVertexNormals();
+
+    const material = new THREE.MeshBasicMaterial({ color: 0x00cccc, side: THREE.DoubleSide });
+    const mesh = new THREE.Mesh(geometry, material);
+    scene.add(mesh);
+
+    const lineGeometry = new THREE.BufferGeometry();
+    lineGeometry.setAttribute(
+        'position',
+        new THREE.BufferAttribute( new Float32Array(geometry_positions), 3)
+    );
+    lineGeometry.setIndex(new THREE.BufferAttribute(new Uint32Array(geometry_faces), 1));
+    
+    const lineMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
+    const line = new THREE.LineLoop(lineGeometry, lineMaterial);
+    scene.add(line);
 }
 
 function onMouseUp() {
@@ -191,12 +217,13 @@ function stopDrawing() {
     drawing = false;
 }
 
+
 function showSpine(spine){
     let spine_geometry = new THREE.BufferGeometry();
     let vertices = [];
     for (let edge of spine) {
-        vertices.push(edge.p1.x, edge.p1.y, 0);
-        vertices.push(edge.p2.x, edge.p2.y, 0);
+        vertices.push(edge.p1.x, edge.p1.y, edge.p1.z ?? 0);
+        vertices.push(edge.p2.x, edge.p2.y, edge.p2.z ?? 0);
     }
     spine_geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
     const material = new THREE.LineBasicMaterial({ color: 0x4545ff });
@@ -208,53 +235,49 @@ function showTriangles(triangles) {
     for (const triangle of triangles) {
         const positions = [];
         for (const point of triangle.points) {
-            positions.push(point.x, point.y, 0);
+            positions.push(point.x, point.y, point.z ?? 0);
         }
         const geometry = new THREE.BufferGeometry();
         geometry.setAttribute(
             'position',
             new THREE.Float32BufferAttribute(positions, 3)
         );
-        
-        console.log("type" + triangle.type);
         if (triangle.type === 'terminal') {
-            const material = new THREE.MeshBasicMaterial({ color: 0x0000ff });
+            const material = new THREE.MeshBasicMaterial({ color: 0x0000ff, side: THREE.DoubleSide });
             const mesh = new THREE.Mesh(geometry, material);
             scene.add(mesh);
         }
         else if (triangle.type === 'sleeve') {
-            const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+            const material = new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide });
             const mesh = new THREE.Mesh(geometry, material);
             scene.add(mesh);
         }
         else if (triangle.type === 'junction') {
-            const material = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+            const material = new THREE.MeshBasicMaterial({ color: 0x00ffff, side: THREE.DoubleSide });
             const mesh = new THREE.Mesh(geometry, material);
             scene.add(mesh);
         }
         else{
-            //console.log("draw", triangle.points[0], triangle.points[1], triangle.points[2]);
-            console.log(positions)
-            const material = new THREE.MeshBasicMaterial({ color: 0x005520 });
+            const material = new THREE.MeshBasicMaterial({ color: 0x005520, side: THREE.DoubleSide });
             const mesh = new THREE.Mesh(geometry, material);
             scene.add(mesh);
         }
 
         // draw the triangle's edges
-        const lineMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
+        const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff });
         const lineGeometry = new THREE.BufferGeometry();
         lineGeometry.setAttribute(
             'position',
             new THREE.Float32BufferAttribute(positions, 3)
         );
-        const line = new THREE.Line(lineGeometry, lineMaterial);
+        // console.log("positions = ", positions);
+        const line = new THREE.LineLoop(lineGeometry, lineMaterial);
         scene.add(line);
     }
-    /*
     for (const triangle of triangles) {
         const positions = [];
         for (const point of triangle.points) {
-            positions.push(point.x, point.y, 0);
+            positions.push(point.x, point.y, point.z ?? 0);
         }
         const geometry = new THREE.BufferGeometry();
         geometry.setAttribute(
@@ -262,7 +285,7 @@ function showTriangles(triangles) {
             new THREE.Float32BufferAttribute(positions, 3)
         );
         if (triangle.type === 'fan') {
-            const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+            const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, side: THREE.DoubleSide });
             const mesh = new THREE.Mesh(geometry, material);
             scene.add(mesh);
         }
@@ -270,16 +293,15 @@ function showTriangles(triangles) {
             continue;
         }
         // draw the triangle's edges
-        const lineMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
+        const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff });
         const lineGeometry = new THREE.BufferGeometry();
         lineGeometry.setAttribute(
             'position',
             new THREE.Float32BufferAttribute(positions, 3)
         );
-        const line = new THREE.Line(lineGeometry, lineMaterial);
+        const line = new THREE.LineLoop(lineGeometry, lineMaterial);
         scene.add(line);
     }
-    */
 }
 
 function updateLine() {
@@ -319,5 +341,13 @@ function onWindowResize() {
 
 function animate() {
     requestAnimationFrame(animate);
+    let objs = scene.children;
+    if(!drawing){
+        for(let obj of objs){
+            //obj.rotation.x += 0.01;
+            //obj.rotation.y += 0.01;
+            //obj.rotation.z += 0.01;
+        }
+    }
     renderer.render(scene, camera);
 }
