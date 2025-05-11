@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { Triangle, Edge } from './triangle.js';
 
 function pointOutside(points, end_edge) {
-    console.log("End edge: ", end_edge);
+    // console.log("End edge: ", end_edge);
     const mid_point = end_edge.getMidpoint();
     const radius = end_edge.getLength() / 2;
     for (let i = 1; i < points.length - 1; i++) {
@@ -16,7 +16,7 @@ function pointOutside(points, end_edge) {
 
 
 function findEndEdge(current_edge, triangle) {
-    console.log(triangle.edges[0].type, triangle.edges[1].type, triangle.edges[2].type);
+    // console.log(triangle.edges[0].type, triangle.edges[1].type, triangle.edges[2].type);
     for (let i = 0; i < triangle.edges.length; i++) {
         let edge = triangle.edges[i];
         if ((edge.type == 'internal' || edge.type == 'fan') && edge != current_edge) {
@@ -51,7 +51,7 @@ export function pruneTriangles(triangles) {
             continue;
         }
 
-        console.log("Pruning triangle: ", triangle);
+        // console.log("Pruning triangle: ", triangle);
 
         let points = [];
         let end_edge, idx;

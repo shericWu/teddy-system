@@ -10,7 +10,7 @@ export function getCDT(points) {
             cdp_edges.push([i-1, i]);
     }
     cdp_edges.push([i-1, 0]);
-    console.log(cdp_points, cdp_edges);
+    // console.log(cdp_points, cdp_edges);
     return cdt2d(cdp_points, cdp_edges, {exterior: false});
 }
 

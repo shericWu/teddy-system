@@ -21,9 +21,10 @@ export class Edge {
     }
 
     getMidpoint() {
-        return new THREE.Vector2(
+        return new THREE.Vector3(
             (this.p1.x + this.p2.x) / 2,
-            (this.p1.y + this.p2.y) / 2
+            (this.p1.y + this.p2.y) / 2,
+            0
         );
     }
 
@@ -40,9 +41,10 @@ export class Triangle {
     }
 
     getMidpoint() {
-        return new THREE.Vector2(
+        return new THREE.Vector3(
             (this.points[0].x + this.points[1].x + this.points[2].x) / 3,
-            (this.points[0].y + this.points[1].y + this.points[2].y) / 3
+            (this.points[0].y + this.points[1].y + this.points[2].y) / 3,
+            0
         );
     }
 }

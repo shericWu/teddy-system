@@ -7,7 +7,7 @@ import * as THREE from 'three'
 import { Triangle, Edge, getTriangles } from './triangle.js';
 import { pruneTriangles } from './pruning.js';
 import { getCDT, showCDT } from './cdt.js';
-import { connectSpine } from './triangulation.js';
+import { triangulate, Point } from './triangulation.js';
 
 /** @type {THREE.Scene} */
 let scene;
@@ -28,7 +28,7 @@ let line;
 /** @type {THREE.BufferGeometry} */
 let line_geometry;
 
-const LINE_UNIT_LEN = 1.5;
+const LINE_UNIT_LEN = 1;
 
 init();
 animate();
@@ -94,7 +94,7 @@ function onMouseDown(event) {
     points = [];
     validColor();
     const pos = getMousePosition(event);
-    points.push(new THREE.Vector2(pos.x, pos.y));
+    points.push(new THREE.Vector3(pos.x, pos.y, 0));
     updateLine();
 }
 
@@ -103,7 +103,7 @@ function onMouseMove(event) {
     document.getElementById("mousePos").innerHTML = `(${pos3.x.toFixed(2)}, ${pos3.y.toFixed(2)})`;
     if (!drawing)
         return;
-    const newPt = new THREE.Vector2(pos3.x, pos3.y);
+    const newPt = new THREE.Vector3(pos3.x, pos3.y, 0);
 
     // Check distance and self-intersection
     const len = points.length;
@@ -145,10 +145,13 @@ function createMeshModel(points){
     const cdt_result = getCDT(points);
     // showCDT(cdt_result);
     var triangles = getTriangles(cdt_result, points);
-    showTriangles(triangles);
+    // showTriangles(triangles);
     triangles = pruneTriangles(triangles);
     showTriangles(triangles);
-    const spine = connectSpine(triangles);
+    var spine, triangulation;
+    [spine, triangulation] = triangulate(triangles);
+    console.log(triangulation);
+    showTriangles(triangulation);
     showSpine(spine);
 }
 
@@ -160,7 +163,7 @@ function onMouseUp() {
         stopDrawing();
         return;
     }
-    points.push(new THREE.Vector2(points[0].x, points[0].y));
+    points.push(new THREE.Vector3(points[0].x, points[0].y, 0));
     updateLine();
     stopDrawing();
     createMeshModel(points);
@@ -212,6 +215,8 @@ function showTriangles(triangles) {
             'position',
             new THREE.Float32BufferAttribute(positions, 3)
         );
+        
+        console.log("type" + triangle.type);
         if (triangle.type === 'terminal') {
             const material = new THREE.MeshBasicMaterial({ color: 0x0000ff });
             const mesh = new THREE.Mesh(geometry, material);
@@ -228,8 +233,13 @@ function showTriangles(triangles) {
             scene.add(mesh);
         }
         else{
-            continue;
+            //console.log("draw", triangle.points[0], triangle.points[1], triangle.points[2]);
+            console.log(positions)
+            const material = new THREE.MeshBasicMaterial({ color: 0x005520 });
+            const mesh = new THREE.Mesh(geometry, material);
+            scene.add(mesh);
         }
+
         // draw the triangle's edges
         const lineMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
         const lineGeometry = new THREE.BufferGeometry();
@@ -240,6 +250,7 @@ function showTriangles(triangles) {
         const line = new THREE.Line(lineGeometry, lineMaterial);
         scene.add(line);
     }
+    /*
     for (const triangle of triangles) {
         const positions = [];
         for (const point of triangle.points) {
@@ -268,6 +279,7 @@ function showTriangles(triangles) {
         const line = new THREE.Line(lineGeometry, lineMaterial);
         scene.add(line);
     }
+    */
 }
 
 function updateLine() {
