@@ -29,7 +29,7 @@ let line;
 /** @type {THREE.BufferGeometry} */
 let line_geometry;
 
-const LINE_UNIT_LEN = 1;
+const LINE_UNIT_LEN = 0.5;
 
 init();
 animate();
@@ -155,7 +155,7 @@ function createMeshModel(points){
     showTriangles(triangulation);
     let geometry_positions, geometry_faces;
     [geometry_positions, geometry_faces] = inflate(triangulation, spine);
-    // showSpine(spine);
+    showSpine(spine);
     // showTriangles(triangulation);
 
     const geometry = new THREE.BufferGeometry();
@@ -165,20 +165,27 @@ function createMeshModel(points){
 
     geometry.computeVertexNormals();
 
-    const material = new THREE.MeshBasicMaterial({ color: 0x00cccc, side: THREE.DoubleSide });
+    const material = new THREE.MeshPhongMaterial({ color: 0x3366ff, side: THREE.DoubleSide });
     const mesh = new THREE.Mesh(geometry, material);
     scene.add(mesh);
 
-    const lineGeometry = new THREE.BufferGeometry();
-    lineGeometry.setAttribute(
-        'position',
-        new THREE.BufferAttribute( new Float32Array(geometry_positions), 3)
-    );
-    lineGeometry.setIndex(new THREE.BufferAttribute(new Uint32Array(geometry_faces), 1));
+    // const lineGeometry = new THREE.BufferGeometry();
+    // lineGeometry.setAttribute(
+    //     'position',
+    //     new THREE.BufferAttribute( new Float32Array(geometry_positions), 3)
+    // );
+    // lineGeometry.setIndex(new THREE.BufferAttribute(new Uint32Array(geometry_faces), 1));
     
-    const lineMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
-    const line = new THREE.LineLoop(lineGeometry, lineMaterial);
-    scene.add(line);
+    // const lineMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
+    // const line = new THREE.LineLoop(lineGeometry, lineMaterial);
+    // scene.add(line);
+
+    let ambientLight = new THREE.AmbientLight('#0c0c0c')
+    scene.add(ambientLight)
+
+    let directionalLight = new THREE.DirectionalLight(0xffffff, 3);
+    directionalLight.position.set(1, 1, 3);
+    scene.add(directionalLight);
 }
 
 function onMouseUp() {
@@ -226,7 +233,7 @@ function showSpine(spine){
         vertices.push(edge.p2.x, edge.p2.y, edge.p2.z ?? 0);
     }
     spine_geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-    const material = new THREE.LineBasicMaterial({ color: 0x4545ff });
+    const material = new THREE.LineBasicMaterial({ color: 0xff0000 });
     const line = new THREE.LineSegments(spine_geometry, material);
     scene.add(line);
 }
@@ -339,15 +346,47 @@ function onWindowResize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
+document.addEventListener('keydown', (event) => {
+    const step = 0.05;
+    if(drawing) return;
+
+    let objs = scene.children;
+
+    switch(event.key) {
+        case 'w':
+            for(let obj of objs){
+                obj.rotation.x -= step;
+            }
+            break;
+        case 's':
+            for(let obj of objs){
+                obj.rotation.x += step;
+            }
+            break;
+        case 'a':
+            for(let obj of objs){
+                obj.rotation.y -= step;
+            }
+            break;
+        case 'd':
+            for(let obj of objs){
+                obj.rotation.y += step;
+            }
+            break;
+        case 'q':
+            for(let obj of objs){
+                obj.rotation.z -= step;
+            }
+            break;
+        case 'e':
+            for(let obj of objs){
+                obj.rotation.z += step;
+            }
+            break;
+    }
+});
+
 function animate() {
     requestAnimationFrame(animate);
-    let objs = scene.children;
-    if(!drawing){
-        for(let obj of objs){
-            //obj.rotation.x += 0.01;
-            //obj.rotation.y += 0.01;
-            //obj.rotation.z += 0.01;
-        }
-    }
     renderer.render(scene, camera);
 }

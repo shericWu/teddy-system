@@ -70,6 +70,13 @@ function addEdge(p1, p2, type) {
 
 function addTriangle(p1, p2, p3, type1 = 'external', type2 = 'external', type3 = 'external', 
             etype1 = 'external', etype2 = 'external', etype3 = 'external'){
+    let area = (p2.x - p1.x) * (p3.y - p1.y) - 
+                 (p3.x - p1.x) * (p2.y - p1.y);
+    if(area < 0){
+        [p1, p2] = [p2, p1];
+        [type1, type2] = [type2, type1];
+        [etype1, etype2] = [etype2, etype1];
+    }
     let a = addPoint(p1, type1), b = addPoint(p2, type2), c = addPoint(p3, type3);
     let e1 = addEdge(b, c, etype1), e2 = addEdge(c, a, etype2), e3 = addEdge(a, b, etype3);
     let new_triangle = new Triangle(a, b, c);
@@ -104,7 +111,7 @@ function triangulateJunction(cursor, spine_edge, idx1, idx2) {
         "internal", "internal", "spine"
     );
     addTriangle(
-        spine_edge.p1, spine_edge.p2, cursor.points[idx2],
+        spine_edge.p2, spine_edge.p1, cursor.points[idx2],
         "spine", "spine", "external", 
         "internal", "internal", "spine"
     );

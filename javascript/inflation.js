@@ -3,7 +3,7 @@ import { Point } from "./triangulation.js";
 import { Triangle, Edge } from './triangle.js';
 
 const ELEVATE_CONSTANT = 1;
-const NUM_SAMPLE = 5;
+const NUM_SAMPLE = 20;
 
 var geometry_positions = [], geometry_faces = [];
 var point_map = new Map();
@@ -30,6 +30,7 @@ function sew_edges(triangles, sampled_points){
             if(edge.type == 'external' || edge.type == 'spine'){
                 edge1 = triangle.edges[(i + 1) % 3];
                 edge2 = triangle.edges[(i + 2) % 3];
+                break;
             }
         }
         let key1 = `${edge1.p1.x},${edge1.p1.y}|${edge1.p2.x},${edge1.p2.y}`;
@@ -42,9 +43,9 @@ function sew_edges(triangles, sampled_points){
         }
         for (let i = 0; i < NUM_SAMPLE - 1; i++) {
             add_triangle(sampled_points1[i], sampled_points1[i+1], sampled_points2[i]);
-            add_triangle(sampled_points1[i+1], sampled_points2[i], sampled_points2[i+1]);
+            add_triangle(sampled_points1[i+1], sampled_points2[i+1], sampled_points2[i]);
         }
-        add_triangle(sampled_points1[NUM_SAMPLE - 1], sampled_points2[NUM_SAMPLE - 1], sampled_points1[NUM_SAMPLE]);
+        add_triangle(sampled_points1[NUM_SAMPLE - 1], sampled_points1[NUM_SAMPLE], sampled_points2[NUM_SAMPLE - 1]);
     }
 }
 
