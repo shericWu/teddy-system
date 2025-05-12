@@ -27,14 +27,15 @@ export class Triangle {
         this.points = [p1, p2, p3];
         this.edges = [null, null, null];
         this.type = null;
-    }
-
-    getMidpoint() {
-        return new THREE.Vector3(
+        this.center = new THREE.Vector3(
             (this.points[0].x + this.points[1].x + this.points[2].x) / 3,
             (this.points[0].y + this.points[1].y + this.points[2].y) / 3,
             0
         );
+    }
+
+    getMidpoint() {
+        return this.center;
     }
 }
 

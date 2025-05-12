@@ -11,7 +11,7 @@ import { triangulate, Point } from './triangulation.js';
 import { inflate } from './inflation.js';
 
 /** @type {THREE.Scene} */
-let scene;
+export let scene;
 
 /** @type {THREE.PerspectiveCamera} */
 let camera;
@@ -28,6 +28,11 @@ let line;
 
 /** @type {THREE.BufferGeometry} */
 let line_geometry;
+
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+
+let meshes = [];
 
 const LINE_UNIT_LEN = 0.5;
 
@@ -50,18 +55,20 @@ function init() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    // // Line geometry and material
-    // line_geometry = new THREE.BufferGeometry();
-    // const material = new THREE.LineBasicMaterial({ color: 0xb7bdf8 });
-    // line = new THREE.LineSegments(line_geometry, material);
-    // scene.add(line);
-
     // Event listeners
     renderer.domElement.addEventListener('mousedown', onMouseDown);
     renderer.domElement.addEventListener('mousemove', onMouseMove);
     renderer.domElement.addEventListener('mouseup', onMouseUp);
     renderer.domElement.addEventListener('mouseleave', onMouseLeave);
     window.addEventListener('resize', onWindowResize);
+    document.addEventListener('keydown', onKeyDown);
+
+    let ambientLight = new THREE.AmbientLight('#0c0c0c')
+    scene.add(ambientLight)
+
+    let directionalLight = new THREE.DirectionalLight(0xffffff, 3);
+    directionalLight.position.set(1, 1, 3);
+    scene.add(directionalLight);
 }
 
 function getMousePosition(event) {
@@ -71,9 +78,9 @@ function getMousePosition(event) {
      * x (left to right): -1 ~ 1
      * y (top to bottom): -1 ~ 1
      */
-    const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-    const vec = new THREE.Vector3(x, y, 0.5);
+    pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    const vec = new THREE.Vector3(pointer.x, pointer.y, 0.5);
     vec.unproject(camera);
     const dir = vec.sub(camera.position).normalize();
     const distance = -camera.position.z / dir.z;
@@ -81,9 +88,7 @@ function getMousePosition(event) {
 }
 
 function onMouseDown(event) {
-    while(scene.children.length > 0){
-        scene.remove(scene.children[0]);
-    }
+    scene.remove(line);
 
     // Line geometry and material
     line_geometry = new THREE.BufferGeometry();
@@ -105,6 +110,14 @@ function onMouseMove(event) {
     if (!drawing)
         return;
     const newPt = new THREE.Vector3(pos3.x, pos3.y, 0);
+
+    raycaster.setFromCamera( pointer, camera );
+	const intersects = raycaster.intersectObjects( scene.children );
+    if(intersects.length > 0){
+        invalidColor();
+        stopDrawing();
+        return;
+    }
 
     // Check distance and self-intersection
     const len = points.length;
@@ -144,19 +157,12 @@ function isValid() {
 
 function createMeshModel(points){
     const cdt_result = getCDT(points);
-    // showCDT(cdt_result);
     var triangles = getTriangles(cdt_result, points);
-    // showTriangles(triangles);
     triangles = pruneTriangles(triangles);
-    // showTriangles(triangles);
     var spine, triangulation;
     [spine, triangulation] = triangulate(triangles);
-    // console.log(triangulation);
-    showTriangles(triangulation);
     let geometry_positions, geometry_faces;
     [geometry_positions, geometry_faces] = inflate(triangulation, spine);
-    showSpine(spine);
-    // showTriangles(triangulation);
 
     const geometry = new THREE.BufferGeometry();
     
@@ -168,24 +174,9 @@ function createMeshModel(points){
     const material = new THREE.MeshPhongMaterial({ color: 0x3366ff, side: THREE.DoubleSide });
     const mesh = new THREE.Mesh(geometry, material);
     scene.add(mesh);
+    meshes.push(mesh);
 
-    // const lineGeometry = new THREE.BufferGeometry();
-    // lineGeometry.setAttribute(
-    //     'position',
-    //     new THREE.BufferAttribute( new Float32Array(geometry_positions), 3)
-    // );
-    // lineGeometry.setIndex(new THREE.BufferAttribute(new Uint32Array(geometry_faces), 1));
-    
-    // const lineMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
-    // const line = new THREE.LineLoop(lineGeometry, lineMaterial);
-    // scene.add(line);
-
-    let ambientLight = new THREE.AmbientLight('#0c0c0c')
-    scene.add(ambientLight)
-
-    let directionalLight = new THREE.DirectionalLight(0xffffff, 3);
-    directionalLight.position.set(1, 1, 3);
-    scene.add(directionalLight);
+    scene.remove(line);
 }
 
 function onMouseUp() {
@@ -224,93 +215,6 @@ function stopDrawing() {
     drawing = false;
 }
 
-
-function showSpine(spine){
-    let spine_geometry = new THREE.BufferGeometry();
-    let vertices = [];
-    for (let edge of spine) {
-        vertices.push(edge.p1.x, edge.p1.y, edge.p1.z ?? 0);
-        vertices.push(edge.p2.x, edge.p2.y, edge.p2.z ?? 0);
-    }
-    spine_geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-    const material = new THREE.LineBasicMaterial({ color: 0xff0000 });
-    const line = new THREE.LineSegments(spine_geometry, material);
-    scene.add(line);
-}
-
-function showTriangles(triangles) {
-    for (const triangle of triangles) {
-        const positions = [];
-        for (const point of triangle.points) {
-            positions.push(point.x, point.y, point.z ?? 0);
-        }
-        const geometry = new THREE.BufferGeometry();
-        geometry.setAttribute(
-            'position',
-            new THREE.Float32BufferAttribute(positions, 3)
-        );
-        if (triangle.type === 'terminal') {
-            const material = new THREE.MeshBasicMaterial({ color: 0x0000ff, side: THREE.DoubleSide });
-            const mesh = new THREE.Mesh(geometry, material);
-            scene.add(mesh);
-        }
-        else if (triangle.type === 'sleeve') {
-            const material = new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide });
-            const mesh = new THREE.Mesh(geometry, material);
-            scene.add(mesh);
-        }
-        else if (triangle.type === 'junction') {
-            const material = new THREE.MeshBasicMaterial({ color: 0x00ffff, side: THREE.DoubleSide });
-            const mesh = new THREE.Mesh(geometry, material);
-            scene.add(mesh);
-        }
-        else{
-            const material = new THREE.MeshBasicMaterial({ color: 0x005520, side: THREE.DoubleSide });
-            const mesh = new THREE.Mesh(geometry, material);
-            scene.add(mesh);
-        }
-
-        // draw the triangle's edges
-        const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff });
-        const lineGeometry = new THREE.BufferGeometry();
-        lineGeometry.setAttribute(
-            'position',
-            new THREE.Float32BufferAttribute(positions, 3)
-        );
-        // console.log("positions = ", positions);
-        const line = new THREE.LineLoop(lineGeometry, lineMaterial);
-        scene.add(line);
-    }
-    for (const triangle of triangles) {
-        const positions = [];
-        for (const point of triangle.points) {
-            positions.push(point.x, point.y, point.z ?? 0);
-        }
-        const geometry = new THREE.BufferGeometry();
-        geometry.setAttribute(
-            'position',
-            new THREE.Float32BufferAttribute(positions, 3)
-        );
-        if (triangle.type === 'fan') {
-            const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, side: THREE.DoubleSide });
-            const mesh = new THREE.Mesh(geometry, material);
-            scene.add(mesh);
-        }
-        else{
-            continue;
-        }
-        // draw the triangle's edges
-        const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff });
-        const lineGeometry = new THREE.BufferGeometry();
-        lineGeometry.setAttribute(
-            'position',
-            new THREE.Float32BufferAttribute(positions, 3)
-        );
-        const line = new THREE.LineLoop(lineGeometry, lineMaterial);
-        scene.add(line);
-    }
-}
-
 function updateLine() {
     const positions = [];
     // points.forEach(p => { positions.push(p.x, p.y, 0); });
@@ -346,9 +250,11 @@ function onWindowResize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-document.addEventListener('keydown', (event) => {
+function onKeyDown(event) {
     const step = 0.05;
     if(drawing) return;
+
+    scene.remove(line);
 
     let objs = scene.children;
 
@@ -384,7 +290,7 @@ document.addEventListener('keydown', (event) => {
             }
             break;
     }
-});
+}
 
 function animate() {
     requestAnimationFrame(animate);

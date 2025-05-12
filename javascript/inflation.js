@@ -70,6 +70,18 @@ function add_triangle(p1, p2, p3) {
     geometry_faces.push(idx1);
     geometry_faces.push(idx2);
     geometry_faces.push(idx3);
+
+    // the other side
+    let p4 = new THREE.Vector3(p1.x, p1.y, -p1.z);
+    let p5 = new THREE.Vector3(p2.x, p2.y, -p2.z);
+    let p6 = new THREE.Vector3(p3.x, p3.y, -p3.z);
+    let idx4 = add_point(p4);
+    let idx6 = add_point(p6);
+    let idx5 = add_point(p5);
+
+    geometry_faces.push(idx4);
+    geometry_faces.push(idx6);
+    geometry_faces.push(idx5);
 }
 
 function oval_sample(triangles){
@@ -117,7 +129,6 @@ function oval_sample(triangles){
     }
     return oval_map;
 }
-
 
 function elevate_spine(spine_edges){
     let elevated_points = [];

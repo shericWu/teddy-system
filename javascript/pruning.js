@@ -124,5 +124,26 @@ export function pruneTriangles(triangles) {
     triangles = triangles.filter((triangle) => !toDelTriangles.includes(triangle));
     triangles = triangles.concat(prunedTriangles);
 
+    for(let cursor of triangles){
+        if(cursor.type !== "junction")
+            continue;
+
+        let n_pruned = 0;
+        for (let edge of cursor.edges) {
+            if(edge.is_pruned)
+                n_pruned++;
+        }
+
+        if(n_pruned == 1){
+            let midpoints = [];
+            for(let edge of cursor.edges){
+                if(!edge.is_pruned)
+                    midpoints.push(edge.getMidpoint());
+            }
+            cursor.center.x = (midpoints[0].x + midpoints[1].x) / 2;
+            cursor.center.y = (midpoints[0].y + midpoints[1].y) / 2;
+        }
+    }
+
     return triangles;
 }
