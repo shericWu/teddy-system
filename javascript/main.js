@@ -158,8 +158,6 @@ function onMouseMove(event) {
     const pos3 = getMousePosition(event);
     document.getElementById("mousePos").innerHTML = `(${pos3.x.toFixed(2)}, ${pos3.y.toFixed(2)})`;
 
-    document.getElementById("cursorStyle").style.left = `${event.clientX}px`;
-    document.getElementById("cursorStyle").style.top = `${event.clientY}px`;
     if (!drawing)
         return;
     const newPt = new THREE.Vector3(pos3.x, pos3.y, 0);
@@ -338,13 +336,13 @@ function onKeyDown(event) {
             if(pressedKeys.has('shift'))
                 group.position.addScaledVector(direction, -pos_step);
             else
-                pivot.rotateOnWorldAxis(cameraRight, rot_step);
+                pivot.rotateOnWorldAxis(cameraRight, -rot_step);
             break;
         case 's':
             if(pressedKeys.has('shift'))
                 group.position.addScaledVector(direction, pos_step);
             else
-                pivot.rotateOnWorldAxis(cameraRight, -rot_step);
+                pivot.rotateOnWorldAxis(cameraRight, rot_step);
             break;
         case 'a':
             if(pressedKeys.has('shift'))
