@@ -41,6 +41,8 @@ let meshes = [];
 let group = new THREE.Group();
 let pivot = new THREE.Group();
 
+let cancel_stack = [];
+
 const pressedKeys = new Set();
 
 const LINE_UNIT_LEN = 0.5;
@@ -63,13 +65,18 @@ function init() {
     renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
+    renderer.domElement.id = "canvas";
+
+    // const cursorTag = `<div class="cursor"></div>`;
+    // let cursor = null;
+    // document.getElementById("canvas").insertAdjacentElement('afterend', cursorTag);
 
     // Event listeners
     renderer.domElement.addEventListener('mousedown', onMouseDown);
     renderer.domElement.addEventListener('mousemove', onMouseMove);
     renderer.domElement.addEventListener('mouseup', onMouseUp);
     renderer.domElement.addEventListener('mouseleave', onMouseLeave);
-    renderer.domElement.addEventListener('mouseclick', onMouseClick);
+    renderer.domElement.addEventListener('click', onMouseClick);
     window.addEventListener('resize', onWindowResize);
     document.addEventListener('keydown', onKeyDown);
     document.addEventListener('keyup', onKeyUp);
@@ -312,6 +319,9 @@ function onWindowResize() {
 }
 
 function onKeyUp(event) {
+    // if(pressedKeys.has('c')){
+    //     document.getElementById("canvas").setAttribute("style", "cursor: auto");
+    // }
     pressedKeys.delete(event.key.toLowerCase());
 }
 
@@ -366,11 +376,37 @@ function onKeyDown(event) {
             else
                 pivot.rotateOnWorldAxis(cameraDirection, -rot_step);
             break;
+        case 'c':
+            if(pressedKeys.has('shift'))
+                uncancelModel();
+            break;
     }
 }
 
-function cancelModel(){
+function uncancelModel(){
+    if(cancel_stack.length == 0)    
+        return;
     
+    let uncancel = cancel_stack[cancel_stack.length - 1];
+    meshes.push(uncancel);
+    group.add(uncancel);
+    cancel_stack.splice(cancel_stack.length - 1, 1);
+}
+
+function cancelModel(){
+    raycaster.setFromCamera( pointer, camera );
+	const intersects = raycaster.intersectObjects( scene.children );
+    let i = 0;
+    while(intersects.length > i && meshes.includes(intersects[i].object)){
+        if(!intersects[i].object.visible){
+            i++;
+            continue;
+        }
+        let toCancel = intersects[i].object;
+        cancel_stack.push(toCancel);
+        meshes.splice(meshes.indexOf(toCancel), 1);
+        group.remove(toCancel);
+    }
 }
 
 function onMouseClick(){
