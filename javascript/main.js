@@ -157,6 +157,9 @@ function onMouseDown(event) {
 function onMouseMove(event) {
     const pos3 = getMousePosition(event);
     document.getElementById("mousePos").innerHTML = `(${pos3.x.toFixed(2)}, ${pos3.y.toFixed(2)})`;
+
+    document.getElementById("cursorStyle").style.left = `${event.clientX}px`;
+    document.getElementById("cursorStyle").style.top = `${event.clientY}px`;
     if (!drawing)
         return;
     const newPt = new THREE.Vector3(pos3.x, pos3.y, 0);
@@ -216,7 +219,7 @@ function createMeshModel(points){
     [geometry_positions, geometry_faces] = inflate(triangulation, spine);
 
     const geometry = new THREE.BufferGeometry();
-    
+
     geometry.setAttribute('position', new THREE.BufferAttribute( new Float32Array(geometry_positions), 3));
     geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(geometry_faces), 1));
 
@@ -377,9 +380,9 @@ function onKeyDown(event) {
 }
 
 function uncancelModel(){
-    if(cancel_stack.length == 0)    
+    if(cancel_stack.length == 0)
         return;
-    
+
     let uncancel = cancel_stack[cancel_stack.length - 1];
     meshes.push(uncancel);
     group.add(uncancel);
