@@ -67,16 +67,11 @@ function init() {
     document.body.appendChild(renderer.domElement);
     renderer.domElement.id = "canvas";
 
-    // const cursorTag = `<div class="cursor"></div>`;
-    // let cursor = null;
-    // document.getElementById("canvas").insertAdjacentElement('afterend', cursorTag);
-
     // Event listeners
     renderer.domElement.addEventListener('mousedown', onMouseDown);
     renderer.domElement.addEventListener('mousemove', onMouseMove);
     renderer.domElement.addEventListener('mouseup', onMouseUp);
     renderer.domElement.addEventListener('mouseleave', onMouseLeave);
-    renderer.domElement.addEventListener('click', onMouseClick);
     window.addEventListener('resize', onWindowResize);
     document.addEventListener('keydown', onKeyDown);
     document.addEventListener('keyup', onKeyUp);
@@ -285,7 +280,6 @@ function stopDrawing() {
 
 function updateLine() {
     const positions = [];
-    // points.forEach(p => { positions.push(p.x, p.y, 0); });
     for (let i = 0; i < points.length - 1; i++) {
         positions.push(points[i].x, points[i].y, 0);
         positions.push(points[i + 1].x, points[i + 1].y, 0);
@@ -319,9 +313,6 @@ function onWindowResize() {
 }
 
 function onKeyUp(event) {
-    // if(pressedKeys.has('c')){
-    //     document.getElementById("canvas").setAttribute("style", "cursor: auto");
-    // }
     pressedKeys.delete(event.key.toLowerCase());
 }
 
@@ -379,6 +370,8 @@ function onKeyDown(event) {
         case 'c':
             if(pressedKeys.has('shift'))
                 uncancelModel();
+            else
+                cancelModel();
             break;
     }
 }
@@ -407,11 +400,6 @@ function cancelModel(){
         meshes.splice(meshes.indexOf(toCancel), 1);
         group.remove(toCancel);
     }
-}
-
-function onMouseClick(){
-    if(pressedKeys.has('c'))
-        cancelModel();
 }
 
 function animate() {
