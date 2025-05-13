@@ -29,15 +29,20 @@ export function triangulate(triangles){
     new_points = new Map();
     let spine = [];
     for (let triangle of triangles){
-        if(triangle.type == 'sleeve')
+        if(triangle.type === 'sleeve')
             handleSleeve(triangle, spine);
-        else if(triangle.type == 'junction')
+        else if(triangle.type === 'junction')
             handleJunction(triangle, spine);
     }
     for (let triangle of triangles){
-        if(triangle.type == 'fan')
+        if(triangle.type === 'fan')
             handleFan(triangle);
     }
+
+    if (spine.length === 0) {
+        handleOnlyFan(triangles, spine);
+    }
+    
     return [spine, resulting_triangulation];
 }
 
@@ -150,4 +155,19 @@ function handleFan(cursor){
     addTriangle(
         cursor.points[0], cursor.points[1], cursor.points[2]
     )
+}
+
+function handleOnlyFan(triangles, spine) {
+    let center;
+    for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 3; j++) {
+            if (triangles[0].points[i] == triangles[1].points[j]) {
+                center = addPoint(triangles[0].points[i]);
+                break;
+            }
+        }
+    }
+    center.type = "spine";
+    let spine_edge = addEdge(center, center, "spine");
+    spine.push(spine_edge);
 }
