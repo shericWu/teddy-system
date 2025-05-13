@@ -43,6 +43,8 @@ let pivot = new THREE.Group();
 
 let cancel_stack = [];
 
+let selected_mesh = null;
+
 const pressedKeys = new Set();
 
 const LINE_UNIT_LEN = 0.5;
@@ -72,6 +74,7 @@ function init() {
     renderer.domElement.addEventListener('mousemove', onMouseMove);
     renderer.domElement.addEventListener('mouseup', onMouseUp);
     renderer.domElement.addEventListener('mouseleave', onMouseLeave);
+    renderer.domElement.addEventListener('dblclick', onDoubleClick);
     window.addEventListener('resize', onWindowResize);
     document.addEventListener('keydown', onKeyDown);
     document.addEventListener('keyup', onKeyUp);
@@ -138,6 +141,8 @@ function getMousePosition(event) {
 }
 
 function onMouseDown(event) {
+    unselect();
+
     scene.remove(line);
 
     // Line geometry and material
@@ -210,7 +215,7 @@ function createMeshModel(points){
     const cdt_result = getCDT(points);
     var triangles = getTriangles(cdt_result, points);
     triangles = pruneTriangles(triangles);
-    group.attach(showTriangles(triangles));
+    // group.attach(showTriangles(triangles));
     var spine, triangulation;
     [spine, triangulation] = triangulate(triangles);
     let geometry_positions, geometry_faces;
@@ -334,41 +339,60 @@ function onKeyDown(event) {
     switch(event.key.toLowerCase()) {
         case 'w':
             if(pressedKeys.has('shift'))
-                group.position.addScaledVector(direction, -pos_step);
-            else
                 pivot.rotateOnWorldAxis(cameraRight, -rot_step);
+            else
+                if(selected_mesh)
+                    selected_mesh.position.addScaledVector(direction, pos_step);
+                else
+                    group.position.addScaledVector(direction, -pos_step);
             break;
         case 's':
             if(pressedKeys.has('shift'))
-                group.position.addScaledVector(direction, pos_step);
-            else
                 pivot.rotateOnWorldAxis(cameraRight, rot_step);
+            else
+                if(selected_mesh)
+                    selected_mesh.position.addScaledVector(direction, -pos_step);
+                else
+                    group.position.addScaledVector(direction, pos_step);
             break;
         case 'a':
             if(pressedKeys.has('shift'))
-                group.position.addScaledVector(right, pos_step);
-            else
                 pivot.rotateOnWorldAxis(cameraUp, -rot_step);
+            else
+                if(selected_mesh)
+                    selected_mesh.position.addScaledVector(right, -pos_step);
+                else
+                    group.position.addScaledVector(right, pos_step);
             break;
         case 'd':
             if(pressedKeys.has('shift'))
-                group.position.addScaledVector(right, -pos_step);
-            else
                 pivot.rotateOnWorldAxis(cameraUp, rot_step);
+            else
+                if(selected_mesh)
+                    selected_mesh.position.addScaledVector(right, pos_step);
+                else
+                    group.position.addScaledVector(right, -pos_step);
             break;
         case 'q':
             if(pressedKeys.has('shift'))
-                group.position.addScaledVector(up, -pos_step);
-            else
                 pivot.rotateOnWorldAxis(cameraDirection, rot_step);
+            else
+                if(selected_mesh)
+                    selected_mesh.position.addScaledVector(up, -pos_step);
+                else
+                    group.position.addScaledVector(up, -pos_step);
             break;
         case 'e':
             if(pressedKeys.has('shift'))
-                group.position.addScaledVector(up, pos_step);
-            else
                 pivot.rotateOnWorldAxis(cameraDirection, -rot_step);
+            else
+                if(selected_mesh)
+                    selected_mesh.position.addScaledVector(up, pos_step);
+                else
+                    group.position.addScaledVector(up, pos_step);
             break;
         case 'c':
+            unselect();
             if(pressedKeys.has('shift'))
                 uncancelModel();
             else
@@ -400,7 +424,38 @@ function cancelModel(){
         cancel_stack.push(toCancel);
         meshes.splice(meshes.indexOf(toCancel), 1);
         group.remove(toCancel);
+        break;
     }
+}
+
+function onDoubleClick(){
+    if(drawing)
+        return;
+
+    raycaster.setFromCamera( pointer, camera );
+	const intersects = raycaster.intersectObjects( scene.children );
+    let i = 0;
+    while(intersects.length > i && meshes.includes(intersects[i].object)){
+        if(!intersects[i].object.visible){
+            i++;
+            continue;
+        }
+        select(intersects[i].object);
+        break;
+    }
+}
+
+function select(mesh){
+    unselect();
+    selected_mesh = mesh;
+    selected_mesh.material.color.set(0xff0000);
+}
+
+function unselect(){
+    if(selected_mesh == null)
+        return;
+    selected_mesh.material.color.set(0x3366ff);
+    selected_mesh = null;
 }
 
 function animate() {
