@@ -9,12 +9,17 @@ import { pruneTriangles } from './pruning.js';
 import { getCDT, showCDT } from './cdt.js';
 import { triangulate, Point } from './triangulation.js';
 import { inflate } from './inflation.js';
+import { showTriangles } from './show.js';
 
 /** @type {THREE.Scene} */
 export let scene;
 
 /** @type {THREE.PerspectiveCamera} */
 let camera;
+
+const cameraDirection = new THREE.Vector3(0, 0, -1);
+const cameraRight = new THREE.Vector3(1, 0, 0);
+const cameraUp = new THREE.Vector3(0, 1, 0);
 
 /** @type {THREE.WebGLRenderer} */
 let renderer;
@@ -33,6 +38,10 @@ const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 
 let meshes = [];
+let group = new THREE.Group();
+let pivot = new THREE.Group();
+
+const pressedKeys = new Set();
 
 const LINE_UNIT_LEN = 0.5;
 
@@ -60,8 +69,10 @@ function init() {
     renderer.domElement.addEventListener('mousemove', onMouseMove);
     renderer.domElement.addEventListener('mouseup', onMouseUp);
     renderer.domElement.addEventListener('mouseleave', onMouseLeave);
+    renderer.domElement.addEventListener('mouseclick', onMouseClick);
     window.addEventListener('resize', onWindowResize);
     document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('keyup', onKeyUp);
 
     let ambientLight = new THREE.AmbientLight('#0c0c0c')
     scene.add(ambientLight)
@@ -69,6 +80,43 @@ function init() {
     let directionalLight = new THREE.DirectionalLight(0xffffff, 3);
     directionalLight.position.set(1, 1, 3);
     scene.add(directionalLight);
+
+    const checkerboardTexture = createCheckerboardTexture();
+    const floorMaterial = new THREE.MeshStandardMaterial({
+        map: checkerboardTexture,
+        side: THREE.DoubleSide
+    });
+
+    const floorGeometry = new THREE.PlaneGeometry(100, 100);
+    const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+    floor.rotation.x = -Math.PI / 2;
+    floor.receiveShadow = true;
+    floor.position.set(0, -5, 0);
+    group.add(floor);
+
+    pivot.add(group);
+    pivot.position.set(0, 0, 10);
+    scene.add(pivot);
+}
+
+function createCheckerboardTexture(size = 512, squares = 8) {
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = size;
+    const ctx = canvas.getContext('2d');
+
+    const squareSize = size / squares;
+
+    for (let y = 0; y < squares; y++) {
+        for (let x = 0; x < squares; x++) {
+            ctx.fillStyle = (x + y) % 2 === 0 ? '#ffffff' : '#000000';
+            ctx.fillRect(x * squareSize, y * squareSize, squareSize, squareSize);
+        }
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(10, 10);
+    return texture;
 }
 
 function getMousePosition(event) {
@@ -113,7 +161,7 @@ function onMouseMove(event) {
 
     raycaster.setFromCamera( pointer, camera );
 	const intersects = raycaster.intersectObjects( scene.children );
-    if(intersects.length > 0){
+    if(intersects.filter((obj) => meshes.includes(obj.object)).length > 0){
         invalidColor();
         stopDrawing();
         return;
@@ -159,6 +207,7 @@ function createMeshModel(points){
     const cdt_result = getCDT(points);
     var triangles = getTriangles(cdt_result, points);
     triangles = pruneTriangles(triangles);
+    // group.attach(showTriangles(triangles));
     var spine, triangulation;
     [spine, triangulation] = triangulate(triangles);
     let geometry_positions, geometry_faces;
@@ -171,10 +220,22 @@ function createMeshModel(points){
 
     geometry.computeVertexNormals();
 
-    const material = new THREE.MeshPhongMaterial({ color: 0x3366ff, side: THREE.DoubleSide });
+    const material = //new THREE.MeshPhongMaterial({ color: 0x3366ff, side: THREE.DoubleSide });
+        new THREE.MeshPhysicalMaterial({
+        color: 0x3366ff,           // 白色基礎色
+        transmission: 0.6,         // 傳輸率 = 玻璃的透光度 (1.0 表完全透明)
+        opacity: 0.6,              // 不透明度 (與 transparent 一起使用)
+        transparent: true,         // 必須設 true 才能看到透明效果
+        roughness: 0.1,            // 粗糙度 (0 = 完美光滑)
+        metalness: 0.0,            // 金屬度 (玻璃為 0)
+        ior: 2,                  // 折射率 (玻璃常用值在 1.45 - 1.52)
+        thickness: 0.5,            // 厚度 (用於折射模擬)
+        side: THREE.DoubleSide     // 如果你有雙面幾何 (像鏡射)，建議使用
+    });
+
     const mesh = new THREE.Mesh(geometry, material);
-    scene.add(mesh);
     meshes.push(mesh);
+    group.attach(mesh);
 
     scene.remove(line);
 }
@@ -250,46 +311,71 @@ function onWindowResize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
+function onKeyUp(event) {
+    pressedKeys.delete(event.key.toLowerCase());
+}
+
+const rot_step = 0.05, pos_step = 0.5;
+
 function onKeyDown(event) {
-    const step = 0.05;
+    pressedKeys.add(event.key.toLowerCase());
+
     if(drawing) return;
 
     scene.remove(line);
 
-    let objs = scene.children;
+    let origin = pivot.worldToLocal(new THREE.Vector3(0, 0, 0));
+    let direction = pivot.worldToLocal(cameraDirection.clone()).sub(origin).normalize();
+    let right = pivot.worldToLocal(cameraRight.clone()).sub(origin).normalize();
+    let up = pivot.worldToLocal(cameraUp.clone()).sub(origin).normalize();
 
-    switch(event.key) {
+    switch(event.key.toLowerCase()) {
         case 'w':
-            for(let obj of objs){
-                obj.rotation.x -= step;
-            }
+            if(pressedKeys.has('shift'))
+                group.position.addScaledVector(direction, -pos_step);
+            else
+                pivot.rotateOnWorldAxis(cameraRight, rot_step);
             break;
         case 's':
-            for(let obj of objs){
-                obj.rotation.x += step;
-            }
+            if(pressedKeys.has('shift'))
+                group.position.addScaledVector(direction, pos_step);
+            else
+                pivot.rotateOnWorldAxis(cameraRight, -rot_step);
             break;
         case 'a':
-            for(let obj of objs){
-                obj.rotation.y -= step;
-            }
+            if(pressedKeys.has('shift'))
+                group.position.addScaledVector(right, pos_step);
+            else
+                pivot.rotateOnWorldAxis(cameraUp, -rot_step);
             break;
         case 'd':
-            for(let obj of objs){
-                obj.rotation.y += step;
-            }
+            if(pressedKeys.has('shift'))
+                group.position.addScaledVector(right, -pos_step);
+            else
+                pivot.rotateOnWorldAxis(cameraUp, rot_step);
             break;
         case 'q':
-            for(let obj of objs){
-                obj.rotation.z -= step;
-            }
+            if(pressedKeys.has('shift'))
+                group.position.addScaledVector(up, -pos_step);
+            else
+                pivot.rotateOnWorldAxis(cameraDirection, rot_step);
             break;
         case 'e':
-            for(let obj of objs){
-                obj.rotation.z += step;
-            }
+            if(pressedKeys.has('shift'))
+                group.position.addScaledVector(up, pos_step);
+            else
+                pivot.rotateOnWorldAxis(cameraDirection, -rot_step);
             break;
     }
+}
+
+function cancelModel(){
+    
+}
+
+function onMouseClick(){
+    if(pressedKeys.has('c'))
+        cancelModel();
 }
 
 function animate() {

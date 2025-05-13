@@ -14,7 +14,8 @@ function showSpine(spine){
     scene.add(line);
 }
 
-function showTriangles(triangles) {
+export function showTriangles(triangles) {
+    let group = new THREE.Group();
     for (const triangle of triangles) {
         const positions = [];
         for (const point of triangle.points) {
@@ -29,21 +30,25 @@ function showTriangles(triangles) {
             const material = new THREE.MeshBasicMaterial({ color: 0x0000ff, side: THREE.DoubleSide });
             const mesh = new THREE.Mesh(geometry, material);
             scene.add(mesh);
+            group.add(mesh);
         }
         else if (triangle.type === 'sleeve') {
             const material = new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide });
             const mesh = new THREE.Mesh(geometry, material);
             scene.add(mesh);
+            group.add(mesh);
         }
         else if (triangle.type === 'junction') {
             const material = new THREE.MeshBasicMaterial({ color: 0x00ffff, side: THREE.DoubleSide });
             const mesh = new THREE.Mesh(geometry, material);
             scene.add(mesh);
+            group.add(mesh);
         }
         else{
             const material = new THREE.MeshBasicMaterial({ color: 0x005520, side: THREE.DoubleSide });
             const mesh = new THREE.Mesh(geometry, material);
             scene.add(mesh);
+            group.add(mesh);
         }
 
         // draw the triangle's edges
@@ -56,6 +61,7 @@ function showTriangles(triangles) {
         // console.log("positions = ", positions);
         const line = new THREE.LineLoop(lineGeometry, lineMaterial);
         scene.add(line);
+        group.add(line);
     }
     for (const triangle of triangles) {
         const positions = [];
@@ -71,6 +77,7 @@ function showTriangles(triangles) {
             const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, side: THREE.DoubleSide });
             const mesh = new THREE.Mesh(geometry, material);
             scene.add(mesh);
+            group.add(mesh);
         }
         else{
             continue;
@@ -84,5 +91,7 @@ function showTriangles(triangles) {
         );
         const line = new THREE.LineLoop(lineGeometry, lineMaterial);
         scene.add(line);
+        group.add(line);
     }
+    return group;
 }
