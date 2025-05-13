@@ -71,7 +71,12 @@ export function pruneTriangles(triangles) {
             if(current_triangle.type == 'junction' || end_edge.type == 'fan')
                 break;
 
+            let old_end_edge = end_edge;
             [end_edge, idx] = findEndEdge(end_edge, current_triangle);
+            if (end_edge == null) {
+                end_edge = old_end_edge;
+                break;
+            }
             updatePoints(points, current_triangle);
             // console.log("End edge is: ", end_edge);
         }

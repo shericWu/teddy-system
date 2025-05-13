@@ -210,7 +210,7 @@ function createMeshModel(points){
     const cdt_result = getCDT(points);
     var triangles = getTriangles(cdt_result, points);
     triangles = pruneTriangles(triangles);
-    // group.attach(showTriangles(triangles));
+    group.attach(showTriangles(triangles));
     var spine, triangulation;
     [spine, triangulation] = triangulate(triangles);
     let geometry_positions, geometry_faces;
