@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Point } from "./triangulation.js";
 import { Triangle, Edge } from './triangle.js';
+import { junction_centers } from './pruning.js';
 
 const ELEVATE_CONSTANT = 1;
 const NUM_SAMPLE = 20;
@@ -146,7 +147,18 @@ function elevate_spine(spine_edges){
     return elevated_points;
 }
 
+function handle_junction_center(cursor) {
+    const key = `${cursor.x},${cursor.y}`;
+    if (!junction_centers.has(key))
+        return false;
+    const avg_dis = junction_centers.get(key);
+    cursor.z = ELEVATE_CONSTANT * avg_dis;
+    return true;
+}
+
 function elevate_point(cursor) {
+    if (handle_junction_center(cursor))
+        return;
     let total_dis = 0;
     let n_external_neighbor = 0;
     for (const neighbor of cursor.adjacent_points) {
