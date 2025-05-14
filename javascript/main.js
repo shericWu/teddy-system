@@ -398,6 +398,12 @@ function onKeyDown(event) {
             else
                 cancelModel();
             break;
+        case 'o':
+            if(pressedKeys.has('shift'))
+                pivot.rotation.set(0,0,0,'XYZ');
+            else
+                group.position.set(0,0,0);
+            break;
     }
 }
 
