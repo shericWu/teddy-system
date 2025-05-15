@@ -58,6 +58,7 @@ const pressedKeys = new Set();
 
 const LINE_UNIT_LEN = 0.5;
 
+let mouse_event_pos = null;
 let rotating_pivot = null;
 let current_facing = null;
 
@@ -186,10 +187,15 @@ function onMouseDown(event) {
 }
 
 function onMouseMove(event) {
-    if(event.ctrlKey){
+    mouse_event_pos = event;
+    const pos3 = getMousePosition(event);
+    document.getElementById("mousePos").innerHTML = `(${pos3.x.toFixed(2)}, ${pos3.y.toFixed(2)})`;
+
+    if(pressedKeys.has('control')){
         if(rotating_pivot == null){
             rotating_pivot = [event.clientX, event.clientY];
-            current_facing = new THREE.Vector3(pivot.rotation.x, pivot.rotation.y, pivot.rotation.z);
+                current_facing = new THREE.Vector3(pivot.rotation.x, pivot.rotation.y, pivot.rotation.z);
+
         }
 
         let rotating_dir = new THREE.Vector2(event.clientX - rotating_pivot[0], event.clientY - rotating_pivot[1]);
@@ -197,8 +203,7 @@ function onMouseMove(event) {
         return;
     }
 
-    const pos3 = getMousePosition(event);
-    document.getElementById("mousePos").innerHTML = `(${pos3.x.toFixed(2)}, ${pos3.y.toFixed(2)})`;
+
 
     if (!drawing)
         return;
@@ -294,8 +299,6 @@ function createMeshModel(points){
 }
 
 function onMouseUp() {
-    rotating_pivot = null;
-
     if (!drawing)
         return;
     if(!isValid()){
@@ -366,6 +369,8 @@ function onWindowResize() {
 }
 
 function onKeyUp(event) {
+    if(event.key == 'Control')
+        rotating_pivot = null;
     pressedKeys.delete(event.key.toLowerCase());
 }
 
@@ -467,6 +472,12 @@ function onKeyDown(event){
             else
                 group.position.set(0,0,0);
             break;
+        case 'control':
+            if(rotating_pivot == null && mouse_event_pos != null){
+                rotating_pivot = [mouse_event_pos.clientX, mouse_event_pos.clientY];
+                current_facing = new THREE.Vector3(pivot.rotation.x, pivot.rotation.y, pivot.rotation.z);
+            }
+            break;
     }
 }
 
@@ -509,7 +520,7 @@ function union_v2(mesh1, mesh2) {
     meshes.splice(meshes.indexOf(mesh2), 1);
     selected_meshes.splice(selected_meshes.indexOf(mesh1), 1);
     selected_meshes.splice(selected_meshes.indexOf(mesh2), 1);
-    
+
     let evaluator = new Evaluator();
     evaluator.attributes = ['position', 'normal'];
     let original_material = mesh1.material;
@@ -518,7 +529,7 @@ function union_v2(mesh1, mesh2) {
 
     new_mesh.geometry.computeBoundsTree();
     new_mesh.updateWorldMatrix();
-    
+
     group.attach(new_mesh);
     group.updateWorldMatrix();
     pivot.updateWorldMatrix();
