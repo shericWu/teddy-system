@@ -11,6 +11,12 @@ import { triangulate, Point } from './triangulation.js';
 import { inflate } from './inflation.js';
 import { showTriangles } from './show.js';
 import { CSG } from 'three-csg-ts';
+import {
+	computeBoundsTree, disposeBoundsTree,
+	computeBatchedBoundsTree, disposeBatchedBoundsTree,
+    acceleratedRaycast,
+} from 'three-mesh-bvh';
+import { ADDITION, SUBTRACTION, Brush, Evaluator } from 'three-bvh-csg';
 
 /** @type {THREE.Scene} */
 export let scene;
@@ -54,6 +60,7 @@ init();
 animate();
 
 function init() {
+    init_bvh();
     // Scene and camera
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(
@@ -95,14 +102,27 @@ function init() {
 
     const floorGeometry = new THREE.PlaneGeometry(100, 100);
     const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+    floorGeometry.computeBoundsTree();
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
     floor.position.set(0, -5, 0);
     group.add(floor);
+    group.updateWorldMatrix();
 
     pivot.add(group);
     pivot.position.set(0, 0, 10);
+    pivot.updateWorldMatrix();
     scene.add(pivot);
+}
+
+function init_bvh() {
+    THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
+    THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
+    THREE.Mesh.prototype.raycast = acceleratedRaycast;
+    THREE.BatchedMesh.prototype.computeBoundsTree = computeBatchedBoundsTree;
+    THREE.BatchedMesh.prototype.disposeBoundsTree = disposeBatchedBoundsTree;
+    THREE.BatchedMesh.prototype.raycast = acceleratedRaycast;
+    raycaster.firstHitOnly = true;
 }
 
 function createCheckerboardTexture(size = 512, squares = 8) {
@@ -147,6 +167,7 @@ function onMouseDown(event) {
     // Line geometry and material
     line_geometry = new THREE.BufferGeometry();
     const material = new THREE.LineBasicMaterial({ color: 0xb7bdf8 });
+    // line_geometry.computeBoundsTree();
     line = new THREE.LineSegments(line_geometry, material);
     scene.add(line);
 
@@ -243,9 +264,14 @@ function createMeshModel(points){
         side: THREE.DoubleSide     // 如果你有雙面幾何 (像鏡射)，建議使用
     });
     // const material = new THREE.MeshNormalMaterial({color: 0x3366ff});
-    const mesh = new THREE.Mesh(geometry, material);
+    // const mesh = new THREE.Mesh(geometry, material);
+    const mesh = new Brush(geometry, material);
+    geometry.computeBoundsTree();
+    mesh.updateWorldMatrix();
     meshes.push(mesh);
     group.attach(mesh);
+    group.updateWorldMatrix();
+    pivot.updateWorldMatrix();
 
     scene.remove(line);
 }
@@ -421,7 +447,8 @@ function onKeyDown(event){
         case 'u':
             let len = selected_meshes.length;
             if(len >= 2)
-                union(selected_meshes[len - 1], selected_meshes[len - 2]);
+                // union(selected_meshes[len - 1], selected_meshes[len - 2]);
+                union_v2(selected_meshes[len - 1], selected_meshes[len - 2]);
             unselect();
             break;
         case 'o':
@@ -455,6 +482,31 @@ function union(mesh1, mesh2){
     selected_meshes.splice(selected_meshes.indexOf(mesh1), 1);
     selected_meshes.splice(selected_meshes.indexOf(mesh2), 1);
     group.add(new_mesh);
+    meshes.push(new_mesh);
+    selected_meshes.push(new_mesh);
+}
+
+function union_v2(mesh1, mesh2) {
+
+    group.remove(mesh1);
+    group.remove(mesh2);
+    meshes.splice(meshes.indexOf(mesh1), 1);
+    meshes.splice(meshes.indexOf(mesh2), 1);
+    selected_meshes.splice(selected_meshes.indexOf(mesh1), 1);
+    selected_meshes.splice(selected_meshes.indexOf(mesh2), 1);
+    
+    let evaluator = new Evaluator();
+    evaluator.attributes = ['position', 'normal'];
+    let original_material = mesh1.material;
+    let new_mesh = evaluator.evaluate(mesh1, mesh2, ADDITION);
+    new_mesh.material = original_material;
+
+    new_mesh.geometry.computeBoundsTree();
+    new_mesh.updateWorldMatrix();
+    
+    group.attach(new_mesh);
+    group.updateWorldMatrix();
+    pivot.updateWorldMatrix();
     meshes.push(new_mesh);
     selected_meshes.push(new_mesh);
 }
