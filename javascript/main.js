@@ -242,7 +242,7 @@ function createMeshModel(points){
         thickness: 0.5,            // 厚度 (用於折射模擬)
         side: THREE.DoubleSide     // 如果你有雙面幾何 (像鏡射)，建議使用
     });
-
+    // const material = new THREE.MeshNormalMaterial({color: 0x3366ff});
     const mesh = new THREE.Mesh(geometry, material);
     meshes.push(mesh);
     group.attach(mesh);
@@ -423,6 +423,12 @@ function onKeyDown(event){
             if(len >= 2)
                 union(selected_meshes[len - 1], selected_meshes[len - 2]);
             unselect();
+            break;
+        case 'o':
+            if(pressedKeys.has('shift'))
+                pivot.rotation.set(0,0,0,'XYZ');
+            else
+                group.position.set(0,0,0);
             break;
     }
 }

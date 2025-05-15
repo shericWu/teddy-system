@@ -43,6 +43,21 @@ function updatePoints(points, triangle){
     }
 }
 
+export let junction_centers = new Map();
+
+function add_junction_center(center, adjs) {
+    const key = `${center.x},${center.y}`;
+    if (junction_centers.has(key))
+        return;
+    
+    let total_dis = 0;
+    for (const neighbor of adjs) {
+        total_dis += Math.sqrt((center.x - neighbor.x) ** 2 + (center.y - neighbor.y) ** 2);
+    }
+    junction_centers.set(key, total_dis / adjs.length);
+    return;
+}
+
 export function pruneTriangles(triangles) {
     let prunedTriangles = [];
     let toDelTriangles = [];
@@ -147,6 +162,7 @@ export function pruneTriangles(triangles) {
             }
             cursor.center.x = (midpoints[0].x + midpoints[1].x) / 2;
             cursor.center.y = (midpoints[0].y + midpoints[1].y) / 2;
+            add_junction_center(cursor.center, cursor.points);
         }
     }
 
