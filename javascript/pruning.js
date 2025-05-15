@@ -170,8 +170,5 @@ export function pruneTriangles(triangles) {
             add_junction_center(cursor.center, cursor.points);
         }
     }
-
-    console.log(triangles);
-
     return triangles;
 }

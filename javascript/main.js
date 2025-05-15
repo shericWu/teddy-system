@@ -145,13 +145,6 @@ function getMousePosition(event) {
 }
 
 function onMouseDown(event) {
-    // if(event.ctrlKey){
-    //     rotating_pivot = [event.clientX, event.clientY];
-    //     current_facing = new THREE.Vector3(pivot.rotation.x, pivot.rotation.y, pivot.rotation.z);
-    //     console.log(current_facing);
-    //     return;
-    // }
-
     scene.remove(line);
 
     // Line geometry and material
@@ -180,7 +173,6 @@ function onMouseMove(event) {
         pivot.rotation.set(current_facing.x + rotating_dir.y/100, current_facing.y + rotating_dir.x/100, current_facing.z, 'XYZ');
         return;
     }
-
 
     const pos3 = getMousePosition(event);
     document.getElementById("mousePos").innerHTML = `(${pos3.x.toFixed(2)}, ${pos3.y.toFixed(2)})`;
