@@ -139,6 +139,10 @@ export function pruneTriangles(triangles) {
 
         prunedTriangles = prunedTriangles.concat(new_triangles);
 
+        if(current_triangle.type == 'junction' && current_triangle.edges[0].is_pruned && 
+                current_triangle.edges[1].is_pruned && current_triangle.edges[2].is_pruned){
+            toDelTriangles.push(current_triangle);
+        }
     }
 
     triangles = triangles.filter((triangle) => !toDelTriangles.includes(triangle));
@@ -166,6 +170,8 @@ export function pruneTriangles(triangles) {
             add_junction_center(cursor.center, cursor.points);
         }
     }
+
+    console.log(triangles);
 
     return triangles;
 }
