@@ -10,7 +10,7 @@ import { getCDT, showCDT } from './cdt.js';
 import { triangulate, Point } from './triangulation.js';
 import { inflate } from './inflation.js';
 import { showTriangles } from './show.js';
-import { CSG } from 'three-csg-ts';
+// import { CSG } from 'three-csg-ts';
 import {
 	computeBoundsTree, disposeBoundsTree,
 	computeBatchedBoundsTree, disposeBatchedBoundsTree,
@@ -37,9 +37,11 @@ let points = [];
 
 /** @type {THREE.Line} */
 let line;
+let floor;
 
 /** @type {THREE.BufferGeometry} */
-let line_geometry;
+let lineGeometry;
+let floorGeometry;
 
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
@@ -103,8 +105,8 @@ function init() {
         side: THREE.DoubleSide
     });
 
-    const floorGeometry = new THREE.PlaneGeometry(100, 100);
-    const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+    floorGeometry = new THREE.PlaneGeometry(100, 100);
+    floor = new THREE.Mesh(floorGeometry, floorMaterial);
     floorGeometry.computeBoundsTree();
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
@@ -168,10 +170,10 @@ function onMouseDown(event) {
     scene.remove(line);
 
     // Line geometry and material
-    line_geometry = new THREE.BufferGeometry();
+    lineGeometry = new THREE.BufferGeometry();
     const material = new THREE.LineBasicMaterial({ color: 0xb7bdf8 });
-    // line_geometry.computeBoundsTree();
-    line = new THREE.LineSegments(line_geometry, material);
+    // lineGeometry.computeBoundsTree();
+    line = new THREE.LineSegments(lineGeometry, material);
     scene.add(line);
 
     drawing = true;
@@ -335,12 +337,12 @@ function updateLine() {
         positions.push(points[i].x, points[i].y, 0);
         positions.push(points[i + 1].x, points[i + 1].y, 0);
     }
-    line_geometry.setAttribute(
+    lineGeometry.setAttribute(
         'position',
         new THREE.Float32BufferAttribute(positions, 3)
     );
-    line_geometry.setDrawRange(0, positions.length);
-    line_geometry.attributes.position.needsUpdate = true;
+    lineGeometry.setDrawRange(0, positions.length);
+    lineGeometry.attributes.position.needsUpdate = true;
 }
 
 // Line segment intersection test in 2D
@@ -367,7 +369,7 @@ function onKeyUp(event) {
     pressedKeys.delete(event.key.toLowerCase());
 }
 
-const rot_step = 0.05, pos_step = 0.5;
+const pos_step = 0.5;
 
 function onKeyDown(event){
     pressedKeys.add(event.key.toLowerCase());
@@ -381,72 +383,62 @@ function onKeyDown(event){
     let right = pivot.worldToLocal(cameraRight.clone()).sub(origin).normalize();
     let up = pivot.worldToLocal(cameraUp.clone()).sub(origin).normalize();
 
+    let floor_normal = (new THREE.Vector3(0, 1, 0));
+    let v;
     switch(event.key.toLowerCase()) {
         case 'w':
-            if(pressedKeys.has('shift'))
-                pivot.rotateOnWorldAxis(cameraRight, -rot_step);
+            v = getProjection(direction, floor_normal).normalize();
+            if(selected_meshes.length > 0){
+                for(let mesh of selected_meshes)
+                    mesh.position.addScaledVector(v, pos_step);
+            }
             else
-                if(selected_meshes.length > 0){
-                    for(let mesh of selected_meshes)
-                        mesh.position.addScaledVector(direction, pos_step);
-                }
-                else
-                    group.position.addScaledVector(direction, -pos_step);
+                group.position.addScaledVector(v, -pos_step);
             break;
         case 's':
-            if(pressedKeys.has('shift'))
-                pivot.rotateOnWorldAxis(cameraRight, rot_step);
+            v = getProjection(direction, floor_normal).normalize();
+            if(selected_meshes.length > 0){
+                for(let mesh of selected_meshes)
+                    mesh.position.addScaledVector(v, -pos_step);
+            }
             else
-                if(selected_meshes.length > 0){
-                    for(let mesh of selected_meshes)
-                        mesh.position.addScaledVector(direction, -pos_step);
-                }
-                else
-                    group.position.addScaledVector(direction, pos_step);
+                group.position.addScaledVector(v, pos_step);
             break;
         case 'a':
-            if(pressedKeys.has('shift'))
-                pivot.rotateOnWorldAxis(cameraUp, -rot_step);
+            v = getProjection(right, floor_normal).normalize();
+            if(selected_meshes.length > 0){
+                for(let mesh of selected_meshes)
+                    mesh.position.addScaledVector(v, -pos_step);
+            }
             else
-                if(selected_meshes.length > 0){
-                    for(let mesh of selected_meshes)
-                        mesh.position.addScaledVector(right, -pos_step);
-                }
-                else
-                    group.position.addScaledVector(right, pos_step);
+                group.position.addScaledVector(v, pos_step);
             break;
         case 'd':
-            if(pressedKeys.has('shift'))
-                pivot.rotateOnWorldAxis(cameraUp, rot_step);
+            v = getProjection(right, floor_normal).normalize();
+            if(selected_meshes.length > 0){
+                for(let mesh of selected_meshes)
+                    mesh.position.addScaledVector(v, pos_step);
+            }
             else
-                if(selected_meshes.length > 0){
-                    for(let mesh of selected_meshes)
-                        mesh.position.addScaledVector(right, pos_step);
-                }
-                else
-                    group.position.addScaledVector(right, -pos_step);
+                group.position.addScaledVector(v, -pos_step);
             break;
         case 'q':
-            if(pressedKeys.has('shift'))
-                pivot.rotateOnWorldAxis(cameraDirection, rot_step);
+            v = up.clone().sub(getProjection(up, floor_normal)).normalize();
+            if(selected_meshes.length > 0){
+                for(let mesh of selected_meshes)
+                    mesh.position.addScaledVector(v, -pos_step);
+            }
             else
-                if(selected_meshes.length > 0){
-                    for(let mesh of selected_meshes)
-                        mesh.position.addScaledVector(up, -pos_step);
-                }
-                else
-                    group.position.addScaledVector(up, -pos_step);
+                group.position.addScaledVector(v, -pos_step);
             break;
         case 'e':
-            if(pressedKeys.has('shift'))
-                pivot.rotateOnWorldAxis(cameraDirection, -rot_step);
+            v = up.clone().sub(getProjection(up, floor_normal)).normalize();
+            if(selected_meshes.length > 0){
+                for(let mesh of selected_meshes)
+                    mesh.position.addScaledVector(v, pos_step);
+            }
             else
-                if(selected_meshes.length > 0){
-                    for(let mesh of selected_meshes)
-                        mesh.position.addScaledVector(up, pos_step);
-                }
-                else
-                    group.position.addScaledVector(up, pos_step);
+                group.position.addScaledVector(v, pos_step);
             break;
         case 'c':
             if(selected_meshes.length > 0){
@@ -478,30 +470,36 @@ function onKeyDown(event){
     }
 }
 
-import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-
-function union(mesh1, mesh2){
-    mesh1.geometry = mergeVertices(mesh1.geometry, 1e-5);
-    mesh2.geometry = mergeVertices(mesh2.geometry, 1e-5);
-
-    let new_mesh = CSG.union(mesh1, mesh2);
-    new_mesh.geometry = mergeVertices(new_mesh.geometry, 1e-5);
-
-    if(new_mesh.geometry.attributes.position.count == 0)
-        return;
-
-    console.log(new_mesh);
-
-    group.remove(mesh1);
-    group.remove(mesh2);
-    meshes.splice(meshes.indexOf(mesh1), 1);
-    meshes.splice(meshes.indexOf(mesh2), 1);
-    selected_meshes.splice(selected_meshes.indexOf(mesh1), 1);
-    selected_meshes.splice(selected_meshes.indexOf(mesh2), 1);
-    group.add(new_mesh);
-    meshes.push(new_mesh);
-    selected_meshes.push(new_mesh);
+function getProjection(v, floor_normal){
+    const n = floor_normal.normalize();
+    const projected = v.clone().sub(n.clone().multiplyScalar(v.dot(n)));
+    return projected;
 }
+
+// import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+
+// function union(mesh1, mesh2){
+//     mesh1.geometry = mergeVertices(mesh1.geometry, 1e-5);
+//     mesh2.geometry = mergeVertices(mesh2.geometry, 1e-5);
+
+//     let new_mesh = CSG.union(mesh1, mesh2);
+//     new_mesh.geometry = mergeVertices(new_mesh.geometry, 1e-5);
+
+//     if(new_mesh.geometry.attributes.position.count == 0)
+//         return;
+
+//     console.log(new_mesh);
+
+//     group.remove(mesh1);
+//     group.remove(mesh2);
+//     meshes.splice(meshes.indexOf(mesh1), 1);
+//     meshes.splice(meshes.indexOf(mesh2), 1);
+//     selected_meshes.splice(selected_meshes.indexOf(mesh1), 1);
+//     selected_meshes.splice(selected_meshes.indexOf(mesh2), 1);
+//     group.add(new_mesh);
+//     meshes.push(new_mesh);
+//     selected_meshes.push(new_mesh);
+// }
 
 function union_v2(mesh1, mesh2) {
 
