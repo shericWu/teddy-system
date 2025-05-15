@@ -9,6 +9,8 @@ TLDR:
     - `$ npm install --save-dev vite`
     - `$ npm install cdt2d`
     - `$ npm install three-csg-ts`
+    - `$ npm install three-mesh-bvh`
+    - `$ npm install three-bvh-csg`
 - Run
     - `$ npx vite`
 
