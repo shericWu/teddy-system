@@ -493,6 +493,10 @@ function onKeyDown(event){
                 current_facing = new THREE.Vector3(pivot.rotation.x, pivot.rotation.y, pivot.rotation.z);
             }
             break;
+        case 'i':
+            let show = document.getElementById("infoBox");
+            show.style.display = show.style.display === 'none' ? '' : 'none';
+            break;
 
     }
 }
