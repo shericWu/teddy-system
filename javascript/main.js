@@ -34,7 +34,7 @@ let renderer;
 let canvas;
 
 let drawing = false;
-let mouse_lock = false;
+let view_mode = false;
 
 let points = [];
 
@@ -194,12 +194,13 @@ function onMouseMove(event) {
 
     if (!drawing){
         if(pressedKeys.has('control')){
-            if(pivot.rotation.x + event.movementY / 100 >= 1.4)
-                event.movementY = (1.4 - pivot.rotation.x) * 100;
-            if(pivot.rotation.x + event.movementY / 100 <= -1.4)
-                event.movementY = (-1.4 - pivot.rotation.x) * 100;
-            pivot.rotation.x += event.movementY / 100;
-            pivot.rotation.y += event.movementX / 100;
+            let moveX = event.movementX, moveY = event.movementY;
+            if(pivot.rotation.x + moveY / 100 >= 1.4)
+                moveY = (1.4 - pivot.rotation.x) * 100;
+            if(pivot.rotation.x + moveY / 100 <= -1.4)
+                moveY = (-1.4 - pivot.rotation.x) * 100;
+            pivot.rotation.x += moveY / 100;
+            pivot.rotation.y += moveX / 100;
         }
         return;
     }
@@ -296,23 +297,27 @@ function createMeshModel(points){
 
 function onLockChange(){
     if (document.pointerLockElement === canvas) {
-        mouse_lock = true;
-        document.removeEventListener('mousemove', onMouseMove);
-        document.addEventListener('mousemove', view_control);
+        view_mode = true;
+        document.getElementById("mousePos").innerHTML = `View Mode`;
+        renderer.domElement.removeEventListener('mousemove', onMouseMove);
+        renderer.domElement.removeEventListener('mousemove', view_control);
+        renderer.domElement.addEventListener('mousemove', view_control);
     } else {
-        mouse_lock = false;
-        document.removeEventListener('mousemove', view_control);
-        document.addEventListener('mousemove', onMouseMove);
+        view_mode = false;
+        renderer.domElement.removeEventListener('mousemove', view_control);
+        renderer.domElement.removeEventListener('mousemove', onMouseMove);
+        renderer.domElement.addEventListener('mousemove', onMouseMove);
     }
 }
 
 function view_control(event){
-    if(pivot.rotation.x + event.movementY / 100 >= 1.4)
-        event.movementY = (1.4 - pivot.rotation.x) * 100;
-    if(pivot.rotation.x + event.movementY / 100 <= -1.4)
-        event.movementY = (-1.4 - pivot.rotation.x) * 100;
-    pivot.rotation.x += event.movementY / 100;
-    pivot.rotation.y += event.movementX / 100;
+    let moveX = event.movementX, moveY = event.movementY;
+    if(pivot.rotation.x + moveY / 100 >= 1.4)
+        moveY = (1.4 - pivot.rotation.x) * 100;
+    if(pivot.rotation.x + moveY / 100 <= -1.4)
+        moveY = (-1.4 - pivot.rotation.x) * 100;
+    pivot.rotation.x += moveY / 100;
+    pivot.rotation.y += moveX / 100;
     return;
 }
 
@@ -489,7 +494,7 @@ function onKeyDown(event){
                 group.position.set(0,0,0);
             break;
         case 'f':
-            if(mouse_lock){
+            if(view_mode){
                 document.exitPointerLock();
             }
             else{
