@@ -31,7 +31,10 @@ const cameraUp = new THREE.Vector3(0, 1, 0);
 /** @type {THREE.WebGLRenderer} */
 let renderer;
 
+let canvas;
+
 let drawing = false;
+let mouse_lock = false;
 
 let points = [];
 
@@ -58,10 +61,6 @@ const pressedKeys = new Set();
 
 const LINE_UNIT_LEN = 0.5;
 
-let mouse_event_pos = null;
-let rotating_pivot = null;
-let current_facing = null;
-
 init();
 animate();
 
@@ -83,6 +82,8 @@ function init() {
     document.body.appendChild(renderer.domElement);
     renderer.domElement.id = "canvas";
 
+    canvas = document.getElementById('canvas');
+
     // Event listeners
     renderer.domElement.addEventListener('mousedown', onMouseDown);
     renderer.domElement.addEventListener('mousemove', onMouseMove);
@@ -92,6 +93,7 @@ function init() {
     window.addEventListener('resize', onWindowResize);
     document.addEventListener('keydown', onKeyDown);
     document.addEventListener('keyup', onKeyUp);
+    document.addEventListener('pointerlockchange', onLockChange);
 
     let ambientLight = new THREE.AmbientLight('#0c0c0c')
     scene.add(ambientLight)
@@ -187,26 +189,20 @@ function onMouseDown(event) {
 }
 
 function onMouseMove(event) {
-    mouse_event_pos = event;
     const pos3 = getMousePosition(event);
     document.getElementById("mousePos").innerHTML = `(${pos3.x.toFixed(2)}, ${pos3.y.toFixed(2)})`;
 
-    if(pressedKeys.has('control')){
-        if(rotating_pivot == null){
-            rotating_pivot = [event.clientX, event.clientY];
-                current_facing = new THREE.Vector3(pivot.rotation.x, pivot.rotation.y, pivot.rotation.z);
-
+    if (!drawing){
+        if(pressedKeys.has('control')){
+            if(pivot.rotation.x + event.movementY / 100 >= 1.4)
+                event.movementY = (1.4 - pivot.rotation.x) * 100;
+            if(pivot.rotation.x + event.movementY / 100 <= -1.4)
+                event.movementY = (-1.4 - pivot.rotation.x) * 100;
+            pivot.rotation.x += event.movementY / 100;
+            pivot.rotation.y += event.movementX / 100;
         }
-
-        let rotating_dir = new THREE.Vector2(event.clientX - rotating_pivot[0], event.clientY - rotating_pivot[1]);
-        pivot.rotation.set(current_facing.x + rotating_dir.y/100, current_facing.y + rotating_dir.x/100, current_facing.z, 'XYZ');
         return;
     }
-
-
-
-    if (!drawing)
-        return;
 
     unselect();
 
@@ -298,6 +294,28 @@ function createMeshModel(points){
     scene.remove(line);
 }
 
+function onLockChange(){
+    if (document.pointerLockElement === canvas) {
+        mouse_lock = true;
+        document.removeEventListener('mousemove', onMouseMove);
+        document.addEventListener('mousemove', view_control);
+    } else {
+        mouse_lock = false;
+        document.removeEventListener('mousemove', view_control);
+        document.addEventListener('mousemove', onMouseMove);
+    }
+}
+
+function view_control(event){
+    if(pivot.rotation.x + event.movementY / 100 >= 1.4)
+        event.movementY = (1.4 - pivot.rotation.x) * 100;
+    if(pivot.rotation.x + event.movementY / 100 <= -1.4)
+        event.movementY = (-1.4 - pivot.rotation.x) * 100;
+    pivot.rotation.x += event.movementY / 100;
+    pivot.rotation.y += event.movementX / 100;
+    return;
+}
+
 function onMouseUp() {
     if (!drawing)
         return;
@@ -369,8 +387,6 @@ function onWindowResize() {
 }
 
 function onKeyUp(event) {
-    if(event.key == 'Control')
-        rotating_pivot = null;
     pressedKeys.delete(event.key.toLowerCase());
 }
 
@@ -472,10 +488,13 @@ function onKeyDown(event){
             else
                 group.position.set(0,0,0);
             break;
-        case 'control':
-            if(rotating_pivot == null && mouse_event_pos != null){
-                rotating_pivot = [mouse_event_pos.clientX, mouse_event_pos.clientY];
-                current_facing = new THREE.Vector3(pivot.rotation.x, pivot.rotation.y, pivot.rotation.z);
+        case 'f':
+            if(mouse_lock){
+                document.exitPointerLock();
+            }
+            else{
+                unselect();
+                canvas.requestPointerLock();
             }
             break;
     }
