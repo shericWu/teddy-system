@@ -49,7 +49,7 @@ function add_junction_center(center, adjs) {
     const key = `${center.x},${center.y}`;
     if (junction_centers.has(key))
         return;
-    
+
     let total_dis = 0;
     for (const neighbor of adjs) {
         total_dis += Math.sqrt((center.x - neighbor.x) ** 2 + (center.y - neighbor.y) ** 2);
@@ -139,7 +139,7 @@ export function pruneTriangles(triangles) {
 
         prunedTriangles = prunedTriangles.concat(new_triangles);
 
-        if(current_triangle.type == 'junction' && current_triangle.edges[0].is_pruned && 
+        if(current_triangle.type == 'junction' && current_triangle.edges[0].is_pruned &&
                 current_triangle.edges[1].is_pruned && current_triangle.edges[2].is_pruned){
             toDelTriangles.push(current_triangle);
         }
@@ -147,7 +147,7 @@ export function pruneTriangles(triangles) {
 
     triangles = triangles.filter((triangle) => !toDelTriangles.includes(triangle));
     triangles = triangles.concat(prunedTriangles);
-    
+
     junction_centers = new Map();
     for(let cursor of triangles){
         if(cursor.type !== "junction")

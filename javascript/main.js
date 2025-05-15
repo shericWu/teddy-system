@@ -50,6 +50,9 @@ const pressedKeys = new Set();
 
 const LINE_UNIT_LEN = 0.5;
 
+let rotating_pivot = null;
+let current_facing = null;
+
 init();
 animate();
 
@@ -142,6 +145,13 @@ function getMousePosition(event) {
 }
 
 function onMouseDown(event) {
+    // if(event.ctrlKey){
+    //     rotating_pivot = [event.clientX, event.clientY];
+    //     current_facing = new THREE.Vector3(pivot.rotation.x, pivot.rotation.y, pivot.rotation.z);
+    //     console.log(current_facing);
+    //     return;
+    // }
+
     scene.remove(line);
 
     // Line geometry and material
@@ -156,9 +166,22 @@ function onMouseDown(event) {
     const pos = getMousePosition(event);
     points.push(new THREE.Vector3(pos.x, pos.y, 0));
     updateLine();
+
 }
 
 function onMouseMove(event) {
+    if(event.ctrlKey){
+        if(rotating_pivot == null){
+            rotating_pivot = [event.clientX, event.clientY];
+            current_facing = new THREE.Vector3(pivot.rotation.x, pivot.rotation.y, pivot.rotation.z);
+        }
+
+        let rotating_dir = new THREE.Vector2(event.clientX - rotating_pivot[0], event.clientY - rotating_pivot[1]);
+        pivot.rotation.set(current_facing.x + rotating_dir.y/100, current_facing.y + rotating_dir.x/100, current_facing.z, 'XYZ');
+        return;
+    }
+
+
     const pos3 = getMousePosition(event);
     document.getElementById("mousePos").innerHTML = `(${pos3.x.toFixed(2)}, ${pos3.y.toFixed(2)})`;
 
@@ -251,6 +274,8 @@ function createMeshModel(points){
 }
 
 function onMouseUp() {
+    rotating_pivot = null;
+
     if (!drawing)
         return;
     if(!isValid()){
