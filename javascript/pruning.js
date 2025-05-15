@@ -143,7 +143,8 @@ export function pruneTriangles(triangles) {
 
     triangles = triangles.filter((triangle) => !toDelTriangles.includes(triangle));
     triangles = triangles.concat(prunedTriangles);
-
+    
+    junction_centers = new Map();
     for(let cursor of triangles){
         if(cursor.type !== "junction")
             continue;

@@ -425,6 +425,7 @@ function onKeyDown(event){
             unselect();
             break;
         case 'o':
+            unselect();
             if(pressedKeys.has('shift'))
                 pivot.rotation.set(0,0,0,'XYZ');
             else
