@@ -7,6 +7,8 @@ TLDR:
 - Install `three.js` and `vite`
     - `$ npm install --save three`
     - `$ npm install --save-dev vite`
+    - `$ npm install cdt2d`
+    - `$ npm install three-csg-ts`
 - Run
     - `$ npx vite`
 

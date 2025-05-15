@@ -3,13 +3,14 @@
  * - Create 3D model in gltf format: https://www.donmccurdy.com/2023/08/01/generating-gltf/
  */
 
-import * as THREE from 'three'
+import * as THREE from 'three';
 import { Triangle, Edge, getTriangles } from './triangle.js';
 import { pruneTriangles } from './pruning.js';
 import { getCDT, showCDT } from './cdt.js';
 import { triangulate, Point } from './triangulation.js';
 import { inflate } from './inflation.js';
 import { showTriangles } from './show.js';
+import { CSG } from 'three-csg-ts';
 
 /** @type {THREE.Scene} */
 export let scene;
@@ -43,7 +44,7 @@ let pivot = new THREE.Group();
 
 let cancel_stack = [];
 
-let selected_mesh = null;
+let selected_meshes = [];
 
 const pressedKeys = new Set();
 
@@ -141,8 +142,6 @@ function getMousePosition(event) {
 }
 
 function onMouseDown(event) {
-    unselect();
-
     scene.remove(line);
 
     // Line geometry and material
@@ -165,15 +164,18 @@ function onMouseMove(event) {
 
     if (!drawing)
         return;
+
+    unselect();
+
     const newPt = new THREE.Vector3(pos3.x, pos3.y, 0);
 
-    raycaster.setFromCamera( pointer, camera );
-	const intersects = raycaster.intersectObjects( scene.children );
-    if(intersects.filter((obj) => meshes.includes(obj.object)).length > 0){
-        invalidColor();
-        stopDrawing();
-        return;
-    }
+    // raycaster.setFromCamera( pointer, camera );
+	// const intersects = raycaster.intersectObjects( scene.children );
+    // if(intersects.filter((obj) => meshes.includes(obj.object)).length > 0){
+    //     invalidColor();
+    //     stopDrawing();
+    //     return;
+    // }
 
     // Check distance and self-intersection
     const len = points.length;
@@ -324,7 +326,7 @@ function onKeyUp(event) {
 
 const rot_step = 0.05, pos_step = 0.5;
 
-function onKeyDown(event) {
+function onKeyDown(event){
     pressedKeys.add(event.key.toLowerCase());
 
     if(drawing) return;
@@ -341,8 +343,10 @@ function onKeyDown(event) {
             if(pressedKeys.has('shift'))
                 pivot.rotateOnWorldAxis(cameraRight, -rot_step);
             else
-                if(selected_mesh)
-                    selected_mesh.position.addScaledVector(direction, pos_step);
+                if(selected_meshes.length > 0){
+                    for(let mesh of selected_meshes)
+                        mesh.position.addScaledVector(direction, pos_step);
+                }
                 else
                     group.position.addScaledVector(direction, -pos_step);
             break;
@@ -350,8 +354,10 @@ function onKeyDown(event) {
             if(pressedKeys.has('shift'))
                 pivot.rotateOnWorldAxis(cameraRight, rot_step);
             else
-                if(selected_mesh)
-                    selected_mesh.position.addScaledVector(direction, -pos_step);
+                if(selected_meshes.length > 0){
+                    for(let mesh of selected_meshes)
+                        mesh.position.addScaledVector(direction, -pos_step);
+                }
                 else
                     group.position.addScaledVector(direction, pos_step);
             break;
@@ -359,8 +365,10 @@ function onKeyDown(event) {
             if(pressedKeys.has('shift'))
                 pivot.rotateOnWorldAxis(cameraUp, -rot_step);
             else
-                if(selected_mesh)
-                    selected_mesh.position.addScaledVector(right, -pos_step);
+                if(selected_meshes.length > 0){
+                    for(let mesh of selected_meshes)
+                        mesh.position.addScaledVector(right, -pos_step);
+                }
                 else
                     group.position.addScaledVector(right, pos_step);
             break;
@@ -368,8 +376,10 @@ function onKeyDown(event) {
             if(pressedKeys.has('shift'))
                 pivot.rotateOnWorldAxis(cameraUp, rot_step);
             else
-                if(selected_mesh)
-                    selected_mesh.position.addScaledVector(right, pos_step);
+                if(selected_meshes.length > 0){
+                    for(let mesh of selected_meshes)
+                        mesh.position.addScaledVector(right, pos_step);
+                }
                 else
                     group.position.addScaledVector(right, -pos_step);
             break;
@@ -377,8 +387,10 @@ function onKeyDown(event) {
             if(pressedKeys.has('shift'))
                 pivot.rotateOnWorldAxis(cameraDirection, rot_step);
             else
-                if(selected_mesh)
-                    selected_mesh.position.addScaledVector(up, -pos_step);
+                if(selected_meshes.length > 0){
+                    for(let mesh of selected_meshes)
+                        mesh.position.addScaledVector(up, -pos_step);
+                }
                 else
                     group.position.addScaledVector(up, -pos_step);
             break;
@@ -386,19 +398,58 @@ function onKeyDown(event) {
             if(pressedKeys.has('shift'))
                 pivot.rotateOnWorldAxis(cameraDirection, -rot_step);
             else
-                if(selected_mesh)
-                    selected_mesh.position.addScaledVector(up, pos_step);
+                if(selected_meshes.length > 0){
+                    for(let mesh of selected_meshes)
+                        mesh.position.addScaledVector(up, pos_step);
+                }
                 else
                     group.position.addScaledVector(up, pos_step);
             break;
         case 'c':
-            unselect();
+            if(selected_meshes.length > 0){
+                unselect();
+                break;
+            }
             if(pressedKeys.has('shift'))
                 uncancelModel();
             else
                 cancelModel();
             break;
+        case 'enter':
+            unselect();
+            break;
+        case 'u':
+            let len = selected_meshes.length;
+            if(len >= 2)
+                union(selected_meshes[len - 1], selected_meshes[len - 2]);
+            unselect();
+            break;
     }
+}
+
+import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+
+function union(mesh1, mesh2){
+    mesh1.geometry = mergeVertices(mesh1.geometry, 1e-5);
+    mesh2.geometry = mergeVertices(mesh2.geometry, 1e-5);
+
+    let new_mesh = CSG.union(mesh1, mesh2);
+    new_mesh.geometry = mergeVertices(new_mesh.geometry, 1e-5);
+
+    if(new_mesh.geometry.attributes.position.count == 0)
+        return;
+
+    console.log(new_mesh);
+
+    group.remove(mesh1);
+    group.remove(mesh2);
+    meshes.splice(meshes.indexOf(mesh1), 1);
+    meshes.splice(meshes.indexOf(mesh2), 1);
+    selected_meshes.splice(selected_meshes.indexOf(mesh1), 1);
+    selected_meshes.splice(selected_meshes.indexOf(mesh2), 1);
+    group.add(new_mesh);
+    meshes.push(new_mesh);
+    selected_meshes.push(new_mesh);
 }
 
 function uncancelModel(){
@@ -440,22 +491,28 @@ function onDoubleClick(){
             i++;
             continue;
         }
-        select(intersects[i].object);
+        let mesh = intersects[i].object;
+        if(selected_meshes.includes(mesh)){
+            selected_meshes.splice(selected_meshes.indexOf(mesh), 1);
+            mesh.material.color.set(0x3366ff);
+        }
+        else
+            select(mesh);
         break;
     }
 }
 
 function select(mesh){
-    unselect();
-    selected_mesh = mesh;
-    selected_mesh.material.color.set(0xff0000);
+    selected_meshes.push(mesh);
+    mesh.material.color.set(0xff0000);
 }
 
 function unselect(){
-    if(selected_mesh == null)
+    if(selected_meshes.length == 0)
         return;
-    selected_mesh.material.color.set(0x3366ff);
-    selected_mesh = null;
+    for(let mesh of selected_meshes)
+        mesh.material.color.set(0x3366ff);
+    selected_meshes = [];
 }
 
 function animate() {

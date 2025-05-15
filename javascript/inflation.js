@@ -3,7 +3,7 @@ import { Point } from "./triangulation.js";
 import { Triangle, Edge } from './triangle.js';
 
 const ELEVATE_CONSTANT = 1;
-const NUM_SAMPLE = 20;
+const NUM_SAMPLE = 5;
 
 var geometry_positions = [], geometry_faces = [];
 var point_map = new Map();
