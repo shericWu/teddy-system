@@ -3,21 +3,10 @@
     <head>
         <meta charset="utf-8">
         <title>Teddy system</title>
-        <style>
-        body { margin: 0; }
-
-        .cursor {
-            position: fixed;
-            background-color: rgba(255, 255, 0, 0.9);
-            border-radius: 8px;
-            padding: 8px;
-            pointer-events: none;
-            z-index: 10000;
-        }
-        </style>
+        <link rel="stylesheet" href="/style.css">
     </head>
     <body>
-        <span id="mousePos">(,)</span>
+        <span id="mousePos"></span>
         <script type="module" src="/javascript/triangle.js"></script>
         <script type="module" src="/javascript/pruning.js"></script>
         <script type="module" src="/javascript/cdt.js"></script>
@@ -25,8 +14,29 @@
         <script type="module" src="/javascript/inflation.js"></script>
         <script type="module" src="/javascript/show.js"></script>
         <script type="module" src="/javascript/main.js"></script>
-        <div id="info">
-            <span id="mousePos"></span>
-        </div>
+        <aside id="infoBox">
+            <p>control</p>
+            <div class="Option"><span class="Key">Left Click</span>draw an object</div>
+            <hr>
+            <div class="Option"><span class="Key">W</span>moving forward</div>
+            <div class="Option"><span class="Key">S</span>moving backward</div>
+            <div class="Option"><span class="Key">A</span>moving left</div>
+            <div class="Option"><span class="Key">D</span>moving right</div>
+            <div class="Option"><span class="Key">Q</span>moving up</div>
+            <div class="Option"><span class="Key">E</span>moving down</div>
+            <div class="Option"><span class="Key">O</span>move to the origin</div>
+            <div class="Option"><span class="Key">Shift + O</span>face to the origin</div>
+            <div class="Option"><span class="Key">Ctrl</span>rotate</div>
+
+            <hr>
+            <div class="Option"><span class="Key">C</span>cancel the object</div>
+            <div class="Option"><span class="Key">Shift + C</span>uncancel an object</div>
+            <hr>
+            <div class="Option"><span class="Key">double click</span>select / unselect the object</div>
+            <div class="Option"><span class="Key">U</span>union two selected object</div>
+            <div class="Option"><span class="Key">Enter / C</span>unselect all objects</div>
+            <hr>
+            <div class="Option"><span class="Key">I</span>open / close infobox</div>
+        </aside>
     </body>
 </html>

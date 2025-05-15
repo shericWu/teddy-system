@@ -497,6 +497,11 @@ function onKeyDown(event){
                 canvas.requestPointerLock();
             }
             break;
+        case 'i':
+            let show = document.getElementById("infoBox");
+            show.style.display = show.style.display === 'none' ? '' : 'none';
+            break;
+
     }
 }
 
