@@ -61,8 +61,10 @@ const pressedKeys = new Set();
 
 const LINE_UNIT_LEN = 0.5;
 
+let lastTime = 0;
+
 init();
-animate();
+requestAnimationFrame(animate);
 
 function init() {
     init_bvh();
@@ -397,6 +399,8 @@ function onKeyUp(event) {
     pressedKeys.delete(event.key.toLowerCase());
 }
 
+const pos_step = 20;
+
 function onKeyDown(event){
     pressedKeys.add(event.key.toLowerCase());
 
@@ -572,11 +576,13 @@ function unselect(){
     selected_meshes = [];
 }
 
-const pos_step = 0.3;
 
-function animate() {
-    requestAnimationFrame(animate);
-    renderer.render(scene, camera);
+function animate(currentTime) {
+    if (!lastTime) lastTime = currentTime;
+
+    const deltaTime = (currentTime - lastTime) / 1000; // 秒
+    lastTime = currentTime;
+
 
     let origin = pivot.worldToLocal(new THREE.Vector3(0, 0, 0));
     let direction = pivot.worldToLocal(cameraDirection.clone()).sub(origin).normalize();
@@ -590,57 +596,60 @@ function animate() {
         v = getProjection(direction, floor_normal).normalize();
         if(selected_meshes.length > 0){
             for(let mesh of selected_meshes)
-                mesh.position.addScaledVector(v, pos_step);
+                mesh.position.addScaledVector(v, pos_step * deltaTime);
         }
         else
-            group.position.addScaledVector(v, -pos_step);
+        group.position.addScaledVector(v, -pos_step * deltaTime);
     }
     else if(pressedKeys.has('s')){
         v = getProjection(direction, floor_normal).normalize();
         if(selected_meshes.length > 0){
             for(let mesh of selected_meshes)
-                mesh.position.addScaledVector(v, -pos_step);
+                mesh.position.addScaledVector(v, -pos_step * deltaTime);
         }
         else
-            group.position.addScaledVector(v, pos_step);
+        group.position.addScaledVector(v, pos_step * deltaTime);
 
     }
     if(pressedKeys.has('a')){
         v = getProjection(right, floor_normal).normalize();
         if(selected_meshes.length > 0){
             for(let mesh of selected_meshes)
-                mesh.position.addScaledVector(v, -pos_step);
+                mesh.position.addScaledVector(v, -pos_step * deltaTime);
         }
         else
-            group.position.addScaledVector(v, pos_step);
+        group.position.addScaledVector(v, pos_step * deltaTime);
 
     }
     else if(pressedKeys.has('d')){
         v = getProjection(right, floor_normal).normalize();
         if(selected_meshes.length > 0){
             for(let mesh of selected_meshes)
-                mesh.position.addScaledVector(v, pos_step);
+                mesh.position.addScaledVector(v, pos_step * deltaTime);
         }
         else
-            group.position.addScaledVector(v, -pos_step);
+        group.position.addScaledVector(v, -pos_step * deltaTime);
 
     }
     if(pressedKeys.has('q') || pressedKeys.has(' ')){
         v = up.clone().sub(getProjection(up, floor_normal)).normalize();
         if(selected_meshes.length > 0){
             for(let mesh of selected_meshes)
-                mesh.position.addScaledVector(v, -pos_step);
+                mesh.position.addScaledVector(v, -pos_step * deltaTime);
         }
         else
-            group.position.addScaledVector(v, -pos_step);
+        group.position.addScaledVector(v, -pos_step * deltaTime);
     }
     else if(pressedKeys.has('e') || pressedKeys.has('shift')){
         v = up.clone().sub(getProjection(up, floor_normal)).normalize();
         if(selected_meshes.length > 0){
             for(let mesh of selected_meshes)
-                mesh.position.addScaledVector(v, pos_step);
+                mesh.position.addScaledVector(v, pos_step * deltaTime);
         }
         else
-            group.position.addScaledVector(v, pos_step);
+        group.position.addScaledVector(v, pos_step * deltaTime);
     }
+
+    renderer.render(scene, camera);
+    requestAnimationFrame(animate);
 }
