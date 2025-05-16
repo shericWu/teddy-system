@@ -18,6 +18,7 @@ import {
     acceleratedRaycast,
 } from 'three-mesh-bvh';
 import { ADDITION, SUBTRACTION, Brush, Evaluator } from 'three-bvh-csg';
+import { timerDelta } from 'three/tsl';
 
 /** @type {THREE.Scene} */
 export let scene;
@@ -49,6 +50,11 @@ let floor;
 /** @type {THREE.BufferGeometry} */
 let lineGeometry;
 let floorGeometry;
+
+const mesh_color = 0x3366ff;
+const selected_mesh_color = 0xff0000;
+const drawing_line_color = 0xb7bdf8;
+const invalid_drawing_line_color = 0xff0000;
 
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
@@ -180,7 +186,7 @@ function onMouseDown(event) {
 
     // Line geometry and material
     lineGeometry = new THREE.BufferGeometry();
-    const material = new THREE.LineBasicMaterial({ color: 0xb7bdf8 });
+    const material = new THREE.LineBasicMaterial({ color: drawing_line_color });
     // lineGeometry.computeBoundsTree();
     line = new THREE.LineSegments(lineGeometry, material);
     scene.add(line);
@@ -263,7 +269,28 @@ function isValid() {
     return true;
 }
 
+
+function translateToMidPoint(points){
+    let mid = new THREE.Vector2(0,0);
+    for(let p of points){
+        mid.x += p.x;
+        mid.y += p.y;
+    }
+    mid.x /= points.length;
+    mid.y /= points.length;
+
+    for(let p of points){
+        p.x -= mid.x;
+        p.y -= mid.y;
+    }
+    return [mid, points];
+
+}
+
 function createMeshModel(points){
+    let mid_points = null;
+    [mid_points, points] = translateToMidPoint(points);
+
     const cdt_result = getCDT(points);
     var triangles = getTriangles(cdt_result, points);
     triangles = pruneTriangles(triangles);
@@ -282,7 +309,7 @@ function createMeshModel(points){
 
     const material = //new THREE.MeshPhongMaterial({ color: 0x3366ff, side: THREE.DoubleSide });
         new THREE.MeshPhysicalMaterial({
-        color: 0x3366ff,           // 白色基礎色
+        color: mesh_color,           // 白色基礎色
         transmission: 0.6,         // 傳輸率 = 玻璃的透光度 (1.0 表完全透明)
         opacity: 0.6,              // 不透明度 (與 transparent 一起使用)
         transparent: true,         // 必須設 true 才能看到透明效果
@@ -295,6 +322,7 @@ function createMeshModel(points){
     // const material = new THREE.MeshNormalMaterial({color: 0x3366ff});
     // const mesh = new THREE.Mesh(geometry, material);
     const mesh = new Brush(geometry, material);
+    mesh.position.set(mid_points.x, mid_points.y, 0);
     geometry.computeBoundsTree();
     mesh.updateWorldMatrix();
     meshes.push(mesh);
@@ -372,12 +400,12 @@ function onMouseLeave() {
 }
 
 function invalidColor() {
-    line.material.color = new THREE.Color(0xff0000);
+    line.material.color = new THREE.Color(invalid_drawing_line_color);
     line.material.needsUpdate = true;
 }
 
 function validColor() {
-    line.material.color = new THREE.Color(0xb7bdf8);
+    line.material.color = new THREE.Color(drawing_line_color);
     line.material.needsUpdate = true;
 }
 
@@ -432,6 +460,9 @@ function onKeyDown(event){
     scene.remove(line);
 
     switch(event.key.toLowerCase()) {
+        case 'w': case 's': case 'a': case 'd': case 'q': case 'e': case 'space': case 'shift':
+            if(pressedKeys.has('control')) event.preventDefault();
+            break;
         case 'c':
             if(selected_meshes.length > 0){
                 unselect();
@@ -511,6 +542,8 @@ function getProjection(v, floor_normal){
 // }
 
 function union_v2(mesh1, mesh2) {
+    // console.log(mesh1.position);
+    // console.log(mesh2.position);
 
     group.remove(mesh1);
     group.remove(mesh2);
@@ -533,6 +566,8 @@ function union_v2(mesh1, mesh2) {
     pivot.updateWorldMatrix();
     meshes.push(new_mesh);
     selected_meshes.push(new_mesh);
+
+    // console.log(new_mesh.position);
 }
 
 function uncancelModel(){
@@ -577,7 +612,7 @@ function onDoubleClick(){
         let mesh = intersects[i].object;
         if(selected_meshes.includes(mesh)){
             selected_meshes.splice(selected_meshes.indexOf(mesh), 1);
-            mesh.material.color.set(0x3366ff);
+            mesh.material.color.set(mesh_color);
         }
         else
             select(mesh);
@@ -587,23 +622,24 @@ function onDoubleClick(){
 
 function select(mesh){
     selected_meshes.push(mesh);
-    mesh.material.color.set(0xff0000);
+    mesh.material.color.set(selected_mesh_color);
 }
 
 function unselect(){
     if(selected_meshes.length == 0)
         return;
     for(let mesh of selected_meshes)
-        mesh.material.color.set(0x3366ff);
+        mesh.material.color.set(mesh_color);
     selected_meshes = [];
 }
 
 const pos_step = 20;
+const rot_step = 5;
 
 function animate(currentTime) {
     if (!lastTime) lastTime = currentTime;
 
-    const deltaTime = (currentTime - lastTime) / 1000; // 秒
+    const deltaTime = (currentTime - lastTime) / 1000;
     lastTime = currentTime;
 
 
@@ -618,8 +654,13 @@ function animate(currentTime) {
     if(pressedKeys.has('w')){
         v = getProjection(direction, floor_normal).normalize();
         if(selected_meshes.length > 0){
-            for(let mesh of selected_meshes)
-                mesh.position.addScaledVector(v, pos_step * deltaTime);
+            for(let mesh of selected_meshes){
+                if(pressedKeys.has('r')){
+                    mesh.rotation.x -= rot_step * deltaTime;
+                }
+                else mesh.position.addScaledVector(v, pos_step * deltaTime);
+
+            }
         }
         else
         group.position.addScaledVector(v, -pos_step * deltaTime);
@@ -627,8 +668,12 @@ function animate(currentTime) {
     else if(pressedKeys.has('s')){
         v = getProjection(direction, floor_normal).normalize();
         if(selected_meshes.length > 0){
-            for(let mesh of selected_meshes)
-                mesh.position.addScaledVector(v, -pos_step * deltaTime);
+            for(let mesh of selected_meshes){
+                if(pressedKeys.has('r')){
+                    mesh.rotation.x += rot_step * deltaTime;
+                }
+                else mesh.position.addScaledVector(v, -pos_step * deltaTime);
+            }
         }
         else
         group.position.addScaledVector(v, pos_step * deltaTime);
@@ -637,8 +682,12 @@ function animate(currentTime) {
     if(pressedKeys.has('a')){
         v = getProjection(right, floor_normal).normalize();
         if(selected_meshes.length > 0){
-            for(let mesh of selected_meshes)
-                mesh.position.addScaledVector(v, -pos_step * deltaTime);
+            for(let mesh of selected_meshes){
+                if(pressedKeys.has('r')){
+                    mesh.rotation.y -= rot_step * deltaTime;
+                }
+                else mesh.position.addScaledVector(v, -pos_step * deltaTime);
+            }
         }
         else
         group.position.addScaledVector(v, pos_step * deltaTime);
@@ -647,8 +696,12 @@ function animate(currentTime) {
     else if(pressedKeys.has('d')){
         v = getProjection(right, floor_normal).normalize();
         if(selected_meshes.length > 0){
-            for(let mesh of selected_meshes)
-                mesh.position.addScaledVector(v, pos_step * deltaTime);
+            for(let mesh of selected_meshes){
+                if(pressedKeys.has('r')){
+                    mesh.rotation.y += rot_step * deltaTime;
+                }
+                else mesh.position.addScaledVector(v, pos_step * deltaTime);
+            }
         }
         else
         group.position.addScaledVector(v, -pos_step * deltaTime);
@@ -657,8 +710,12 @@ function animate(currentTime) {
     if(pressedKeys.has('q') || pressedKeys.has(' ')){
         v = up.clone().sub(getProjection(up, floor_normal)).normalize();
         if(selected_meshes.length > 0){
-            for(let mesh of selected_meshes)
-                mesh.position.addScaledVector(v, pos_step * deltaTime);
+            for(let mesh of selected_meshes){
+                if(pressedKeys.has('r')){
+                    mesh.rotation.z += rot_step * deltaTime;
+                }
+                else mesh.position.addScaledVector(v, pos_step * deltaTime);
+            }
         }
         else
         group.position.addScaledVector(v, -pos_step * deltaTime);
@@ -666,8 +723,12 @@ function animate(currentTime) {
     else if(pressedKeys.has('e') || pressedKeys.has('shift')){
         v = up.clone().sub(getProjection(up, floor_normal)).normalize();
         if(selected_meshes.length > 0){
-            for(let mesh of selected_meshes)
-                mesh.position.addScaledVector(v, -pos_step * deltaTime);
+            for(let mesh of selected_meshes){
+                if(pressedKeys.has('r')){
+                    mesh.rotation.z -= rot_step * deltaTime;
+                }
+                else mesh.position.addScaledVector(v, -pos_step * deltaTime);
+            }
         }
         else
         group.position.addScaledVector(v, pos_step * deltaTime);
