@@ -16,7 +16,8 @@ import {
 	computeBatchedBoundsTree, disposeBatchedBoundsTree,
     acceleratedRaycast,
 } from 'three-mesh-bvh';
-import { ADDITION, SUBTRACTION, Brush, Evaluator } from 'three-bvh-csg';
+import { ADDITION, SUBTRACTION, INTERSECTION, Brush, Evaluator } from 'three-bvh-csg';
+import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 /** @type {THREE.Scene} */
 export let scene;
@@ -273,19 +274,19 @@ function createMeshModel(points){
 
     geometry.computeVertexNormals();
 
-    const material = //new THREE.MeshPhongMaterial({ color: 0x3366ff, side: THREE.DoubleSide });
-        new THREE.MeshPhysicalMaterial({
-        color: 0x3366ff,           // 白色基礎色
-        transmission: 0.6,         // 傳輸率 = 玻璃的透光度 (1.0 表完全透明)
-        opacity: 0.6,              // 不透明度 (與 transparent 一起使用)
-        transparent: true,         // 必須設 true 才能看到透明效果
-        roughness: 0.1,            // 粗糙度 (0 = 完美光滑)
-        metalness: 0.0,            // 金屬度 (玻璃為 0)
-        ior: 2,                  // 折射率 (玻璃常用值在 1.45 - 1.52)
-        thickness: 0.5,            // 厚度 (用於折射模擬)
-        side: THREE.DoubleSide     // 如果你有雙面幾何 (像鏡射)，建議使用
-    });
-    // const material = new THREE.MeshNormalMaterial({color: 0x3366ff});
+    // const material = //new THREE.MeshPhongMaterial({ color: 0x3366ff, side: THREE.DoubleSide });
+    //     new THREE.MeshPhysicalMaterial({
+    //     color: 0x3366ff,           // 白色基礎色
+    //     transmission: 0.6,         // 傳輸率 = 玻璃的透光度 (1.0 表完全透明)
+    //     opacity: 0.6,              // 不透明度 (與 transparent 一起使用)
+    //     transparent: true,         // 必須設 true 才能看到透明效果
+    //     roughness: 0.1,            // 粗糙度 (0 = 完美光滑)
+    //     metalness: 0.0,            // 金屬度 (玻璃為 0)
+    //     ior: 2,                  // 折射率 (玻璃常用值在 1.45 - 1.52)
+    //     thickness: 0.5,            // 厚度 (用於折射模擬)
+    //     side: THREE.DoubleSide     // 如果你有雙面幾何 (像鏡射)，建議使用
+    // });
+    const material = new THREE.MeshPhongMaterial({color: 0x3366ff});
     // const mesh = new THREE.Mesh(geometry, material);
     const mesh = new Brush(geometry, material);
     geometry.computeBoundsTree();
@@ -482,7 +483,12 @@ function onKeyDown(event){
             let show = document.getElementById("infoBox");
             show.style.display = show.style.display === 'none' ? '' : 'none';
             break;
-
+        case 'backspace':
+            if (selected_meshes.length >= 1)  {
+                difference(selected_meshes[selected_meshes.length - 1]);
+            }
+            unselect();
+            break;
     }
 }
 
@@ -492,30 +498,192 @@ function getProjection(v, floor_normal){
     return projected;
 }
 
-// import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+function getCutterBrush(line) {
+    // Parameters to control the cutting mesh
+    const far_z = -20, near_z = 20, thickness = 0.01;
+    
+    let cutter_pos = [];
+    let cutter_index = [];
+    const line_len = line.length;
+    for (let i = 0; i < line_len; i++) {
+        cutter_pos.push(line[i].x, line[i].y, near_z);
+        cutter_pos.push(line[i].x, line[i].y, far_z);
+        let prev_dir = null, next_dir = null, dir = null;
+        if (i > 0) {
+            prev_dir = line[i].clone().sub(line[i-1]);
+            prev_dir.set(prev_dir.y, -prev_dir.x).normalize();
+        }
+        if (i < line_len - 1) {
+            next_dir = line[i+1].clone().sub(line[i]);
+            next_dir.set(next_dir.y, -next_dir.x).normalize();
+        }
+        if (prev_dir != null && next_dir != null)
+            dir = prev_dir.clone().add(next_dir).normalize();
+        else if (prev_dir != null)
+            dir = prev_dir.clone();
+        else
+            dir = next_dir.clone();
+        dir.multiplyScalar(thickness);
+        const edge = line[i].clone().add(dir);
+        cutter_pos.push(edge.x, edge.y, far_z);
+        cutter_pos.push(edge.x, edge.y, near_z);
+    }
+    
+    for (let i = 0; i < cutter_pos.length - 4; i += 4) {
+        cutter_index.push(i, i+4, i+1);
+        cutter_index.push(i+4, i+5, i+1);
+        cutter_index.push(i+3, i+2, i+7);
+        cutter_index.push(i+2, i+6, i+7);
+        cutter_index.push(i, i+3, i+4);
+        cutter_index.push(i+3, i+7, i+4);
+        cutter_index.push(i+1, i+5, i+2);
+        cutter_index.push(i+5, i+6, i+2);
+    }
+    cutter_index.push(0, 1, 3);
+    cutter_index.push(1, 2, 3);
+    const last_i = cutter_pos.length - 4;
+    cutter_index.push(last_i + 0, last_i + 3, last_i + 1);
+    cutter_index.push(last_i + 3, last_i + 2, last_i + 1);
+    
+    const cutter_geo = new THREE.BufferGeometry();
+    cutter_geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(cutter_pos), 3));
+    cutter_geo.setIndex(new THREE.BufferAttribute(new Uint32Array(cutter_index), 1));
+    cutter_geo.computeVertexNormals();
+    const cutter_material = new THREE.MeshPhysicalMaterial({
+        color: 0xffffff, opacity: 0.0, transparent: true, side: THREE.DoubleSide
+    });
+    const cutterBrush = new Brush(cutter_geo, cutter_material);
+    cutter_geo.computeBoundsTree();
+    cutterBrush.updateWorldMatrix();
+    return cutterBrush;
+}
 
-// function union(mesh1, mesh2){
-//     mesh1.geometry = mergeVertices(mesh1.geometry, 1e-5);
-//     mesh2.geometry = mergeVertices(mesh2.geometry, 1e-5);
+function splitMesh(position, index, original_material) {
+    const parent_len = position.length / 3;
+    let parent = new Int32Array(parent_len).fill(-1);
+    
+    function find(i) {
+        if (i >= parent_len) {
+            console.log("error:", i, parent_len);
+        }
+        let trajectory = [];
+        while (parent[i] >= 0) {
+            trajectory.push(i);
+            i = parent[i];
+        }
+        for (let idx of trajectory) {
+            parent[idx] = i;
+        }
+        return i;
+    }
 
-//     let new_mesh = CSG.union(mesh1, mesh2);
-//     new_mesh.geometry = mergeVertices(new_mesh.geometry, 1e-5);
+    function merge(i, j) {
+        let r1 = find(i);
+        let r2 = find(j);
+        if (r1 == r2)
+            return;
+        let sum = parent[r1] + parent[r2];
+        if (parent[r1] < parent[r2]) {
+            parent[r2] = r1;
+            parent[r1] = sum;
+        }
+        else {
+            parent[r1] = r2;
+            parent[r2] = sum;
+        }
+    }
 
-//     if(new_mesh.geometry.attributes.position.count == 0)
-//         return;
+    function getRoots() {
+        let roots = [];
+        for (let i = 0; i < parent_len; i++) {
+            let r = find(i);
+            if (roots.indexOf(r) === -1)
+                roots.push(r);
+        }
+        console.log("roots before:", roots);
+        return roots;
+    }
 
-//     console.log(new_mesh);
+    const index_len = index.length;
+    for (let i = 0; i < index_len; i += 3) {
+        merge(index[i], index[i+1])
+        merge(index[i+1], index[i+2])
+        merge(index[i+2], index[i])
+    }
+    let roots = getRoots();
+    console.log("roots after", roots);
+    let ret = [];
+    for (let i = 0; i < roots.length; i++) {
+        ret.push([new Float32Array(position), []])
+    }
+    for (let i = 0; i < index_len; i += 3) {
+        let temp = roots.indexOf(find(index[i]));
+        for (let j = 0; j < 3; j++) {
+            let root_idx = roots.indexOf(find(index[i + j]));
+            if (root_idx != temp || root_idx == -1) {
+                console.log("bad:", temp, root_idx);
+            }
+            ret[root_idx][1].push(index[i + j]);
+        }
+    }
+    let splitted = [];
+    for (let i = 0; i < roots.length; i++) {
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.BufferAttribute(ret[i][0], 3));
+        geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(ret[i][1]), 1));
+        geometry.computeVertexNormals();
+        const mesh = new Brush(geometry, original_material.clone());
+        geometry.computeBoundsTree();
+        mesh.updateWorldMatrix();
+        splitted.push(mesh);
+    }
+    return splitted;
+}
 
-//     group.remove(mesh1);
-//     group.remove(mesh2);
-//     meshes.splice(meshes.indexOf(mesh1), 1);
-//     meshes.splice(meshes.indexOf(mesh2), 1);
-//     selected_meshes.splice(selected_meshes.indexOf(mesh1), 1);
-//     selected_meshes.splice(selected_meshes.indexOf(mesh2), 1);
-//     group.add(new_mesh);
-//     meshes.push(new_mesh);
-//     selected_meshes.push(new_mesh);
-// }
+function difference(mesh) {
+    const line = [
+        new THREE.Vector2(-0.5, -7),
+        new THREE.Vector2( 0.5, -6),
+        new THREE.Vector2(-0.5, -5),
+        new THREE.Vector2( 0.5, -4),
+        new THREE.Vector2(-0.5, -3),
+        new THREE.Vector2( 0.5, -2),
+        new THREE.Vector2(-0.5, -1),
+        new THREE.Vector2( 0.5,  0),
+        new THREE.Vector2(-0.5,  1),
+        new THREE.Vector2( 0.5,  2),
+        new THREE.Vector2(-0.5,  3),
+        new THREE.Vector2( 0.5,  4),
+        new THREE.Vector2(-0.5,  5),
+        new THREE.Vector2( 0.5,  6),
+        new THREE.Vector2(-0.5,  7),
+    ]
+    
+    let cutterBrush = getCutterBrush(line);
+    group.remove(mesh);
+    meshes.splice(meshes.indexOf(mesh), 1);
+    selected_meshes.splice(selected_meshes.indexOf(mesh), 1);
+    const evaluator = new Evaluator();
+    evaluator.attributes = ['position'];  // * Ignore normal so mergeVertices can merge the "skin"
+    let original_material = mesh.material;
+    let remain = evaluator.evaluate(mesh, cutterBrush, SUBTRACTION);
+    // let cut_plane = evaluator.evaluate(mesh, cutterBrush, INTERSECTION);
+    let result_geo = remain.geometry;
+    let merged_geo = mergeVertices(result_geo);
+    remain.material = original_material;
+    // cut_plane.material = original_material;
+
+    let splitted = splitMesh(
+        merged_geo.attributes.position.array,
+        merged_geo.getIndex().array,
+        original_material
+    );
+    for (let mesh of splitted) {
+        group.attach(mesh);
+        meshes.push(mesh);
+        selected_meshes.push(mesh);
+    }
+}
 
 function union_v2(mesh1, mesh2) {
 
@@ -530,7 +698,7 @@ function union_v2(mesh1, mesh2) {
     evaluator.attributes = ['position', 'normal'];
     let original_material = mesh1.material;
     let new_mesh = evaluator.evaluate(mesh1, mesh2, ADDITION);
-    new_mesh.material = original_material;
+    new_mesh.material = original_material.clone();
 
     new_mesh.geometry.computeBoundsTree();
     new_mesh.updateWorldMatrix();
