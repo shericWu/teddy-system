@@ -533,17 +533,20 @@ function getProjection(v, floor_normal){
     return projected;
 }
 
-function getCutterBrush(line, mesh_z = 0) {
+function getCutterBrush(line, mesh_pos) {
     // Parameters to control the cutting mesh
-    console.log("mesh z: ", mesh_z);
-    const far_z = -50, near_z = 50, thickness = 0.01;
+    const far_z = 50, near_z = 10, thickness = 0.01;
     
     let cutter_pos = [];
     let cutter_index = [];
     const line_len = line.length;
     for (let i = 0; i < line_len; i++) {
-        cutter_pos.push(line[i].x, line[i].y, near_z);
-        cutter_pos.push(line[i].x, line[i].y, far_z);
+        let point = new THREE.Vector3(line[i].x, line[i].y, 0);
+        const ray_dir = point.clone().sub(camera.position).normalize();
+        let near = point.clone().sub(ray_dir.clone().multiplyScalar(near_z));
+        let far = point.clone().add(ray_dir.clone().multiplyScalar(far_z));
+        cutter_pos.push(near.x, near.y, near.z);
+        cutter_pos.push(far.x, far.y, far.z);
         let prev_dir = null, next_dir = null, dir = null;
         if (i > 0) {
             prev_dir = line[i].clone().sub(line[i-1]);
@@ -560,9 +563,11 @@ function getCutterBrush(line, mesh_z = 0) {
         else
             dir = next_dir.clone();
         dir.multiplyScalar(thickness);
-        const edge = line[i].clone().add(dir);
-        cutter_pos.push(edge.x, edge.y, mesh_z + far_z);
-        cutter_pos.push(edge.x, edge.y, mesh_z + near_z);
+        const edge = point.clone().add(new THREE.Vector3(dir.x, dir.y, 0));
+        near = edge.clone().sub(ray_dir.clone().multiplyScalar(near_z));
+        far = edge.clone().add(ray_dir.clone().multiplyScalar(far_z));
+        cutter_pos.push(far.x, far.y, far.z);
+        cutter_pos.push(near.x, near.y, near.z);
     }
     
     for (let i = 0; i < cutter_pos.length - 4; i += 4) {
@@ -677,7 +682,6 @@ function splitMesh(position, index, original_material) {
 }
 
 function cutting(mesh, line) {
-    console.log("object position:", mesh.position);
     let cutterBrush = getCutterBrush(line, mesh.position.z);
     group.remove(mesh);
     meshes.splice(meshes.indexOf(mesh), 1);
@@ -783,6 +787,7 @@ function onDoubleClick(){
 function select(mesh){
     selected_meshes.push(mesh);
     mesh.material.color.set(selected_mesh_color);
+    console.log(mesh.position);
 }
 
 function unselect(){
