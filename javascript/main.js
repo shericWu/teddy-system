@@ -35,6 +35,7 @@ let renderer;
 
 let canvas;
 
+let mouse_down = false;
 let drawing = false;
 let view_mode = false;
 
@@ -182,6 +183,8 @@ function getMousePosition(event) {
 }
 
 function onMouseDown(event) {
+    mouse_down = true;
+
     scene.remove(line);
 
     // Line geometry and material
@@ -191,18 +194,18 @@ function onMouseDown(event) {
     line = new THREE.LineSegments(lineGeometry, material);
     scene.add(line);
 
-    drawing = true;
     points = [];
     validColor();
     const pos = getMousePosition(event);
     points.push(new THREE.Vector3(pos.x, pos.y, 0));
     updateLine();
-
 }
 
 function onMouseMove(event) {
     const pos3 = getMousePosition(event);
     document.getElementById("mousePos").innerHTML = `(${pos3.x.toFixed(2)}, ${pos3.y.toFixed(2)})`;
+
+    if(!drawing && mouse_down)  drawing = true;
 
     if (!drawing){
         if(pressedKeys.has('control')){
@@ -284,7 +287,6 @@ function translateToMidPoint(points){
         p.y -= mid.y;
     }
     return [mid, points];
-
 }
 
 function createMeshModel(points){
@@ -363,6 +365,8 @@ function view_control(event){
 }
 
 function onMouseUp() {
+    mouse_down = false;
+
     if (!drawing)
         return;
     if(cutting_mode){
@@ -375,6 +379,7 @@ function onMouseUp() {
         }
         // console.log(cutting_curve);
         cutting();
+        cutting_mode = false;
         scene.remove(line);
         unselect();
         return;
@@ -411,6 +416,7 @@ function validColor() {
 
 
 function stopDrawing() {
+    mouse_down = false;
     drawing = false;
 }
 
@@ -506,7 +512,6 @@ function onKeyDown(event){
         case 'i':
             onInfoButtomClick();
             break;
-
     }
 }
 
@@ -542,9 +547,6 @@ function getProjection(v, floor_normal){
 // }
 
 function union_v2(mesh1, mesh2) {
-    // console.log(mesh1.position);
-    // console.log(mesh2.position);
-
     group.remove(mesh1);
     group.remove(mesh2);
     meshes.splice(meshes.indexOf(mesh1), 1);
@@ -663,7 +665,7 @@ function animate(currentTime) {
             }
         }
         else
-        group.position.addScaledVector(v, -pos_step * deltaTime);
+            group.position.addScaledVector(v, -pos_step * deltaTime);
     }
     else if(pressedKeys.has('s')){
         v = getProjection(direction, floor_normal).normalize();
@@ -676,7 +678,7 @@ function animate(currentTime) {
             }
         }
         else
-        group.position.addScaledVector(v, pos_step * deltaTime);
+            group.position.addScaledVector(v, pos_step * deltaTime);
 
     }
     if(pressedKeys.has('a')){
@@ -690,7 +692,7 @@ function animate(currentTime) {
             }
         }
         else
-        group.position.addScaledVector(v, pos_step * deltaTime);
+            group.position.addScaledVector(v, pos_step * deltaTime);
 
     }
     else if(pressedKeys.has('d')){
@@ -704,7 +706,7 @@ function animate(currentTime) {
             }
         }
         else
-        group.position.addScaledVector(v, -pos_step * deltaTime);
+            group.position.addScaledVector(v, -pos_step * deltaTime);
 
     }
     if(pressedKeys.has('q') || pressedKeys.has(' ')){
@@ -718,7 +720,7 @@ function animate(currentTime) {
             }
         }
         else
-        group.position.addScaledVector(v, -pos_step * deltaTime);
+            group.position.addScaledVector(v, -pos_step * deltaTime);
     }
     else if(pressedKeys.has('e') || pressedKeys.has('shift')){
         v = up.clone().sub(getProjection(up, floor_normal)).normalize();
@@ -731,7 +733,7 @@ function animate(currentTime) {
             }
         }
         else
-        group.position.addScaledVector(v, pos_step * deltaTime);
+            group.position.addScaledVector(v, pos_step * deltaTime);
     }
 
     renderer.render(scene, camera);
