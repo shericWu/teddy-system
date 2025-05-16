@@ -18,11 +18,16 @@ body {
 
 #mousePos {
     position: absolute;
-    color: #e7e7e7;
+    color: #c8ed70;
     font: bolder;
     z-index: 9999;
     top: 8px;
     left: 8px;
+    text-shadow:
+    -1px -1px 0 black,
+     1px -1px 0 black,
+    -1px  1px 0 black,
+     1px  1px 0 black;
 }
 
 #infoBox {

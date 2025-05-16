@@ -397,8 +397,6 @@ function onKeyUp(event) {
     pressedKeys.delete(event.key.toLowerCase());
 }
 
-const pos_step = 0.1;
-
 function onKeyDown(event){
     pressedKeys.add(event.key.toLowerCase());
 
@@ -406,75 +404,16 @@ function onKeyDown(event){
 
     scene.remove(line);
 
-    // let origin = pivot.worldToLocal(new THREE.Vector3(0, 0, 0));
-    // let direction = pivot.worldToLocal(cameraDirection.clone()).sub(origin).normalize();
-    // let right = pivot.worldToLocal(cameraRight.clone()).sub(origin).normalize();
-    // let up = pivot.worldToLocal(cameraUp.clone()).sub(origin).normalize();
-
-    // let floor_normal = (new THREE.Vector3(0, 1, 0));
-    // let v;
     switch(event.key.toLowerCase()) {
-        // case 'w':
-        //     v = getProjection(direction, floor_normal).normalize();
-        //     if(selected_meshes.length > 0){
-        //         for(let mesh of selected_meshes)
-        //             mesh.position.addScaledVector(v, pos_step);
-        //     }
-        //     else
-        //         group.position.addScaledVector(v, -pos_step);
-        //     break;
-        // case 's':
-        //     v = getProjection(direction, floor_normal).normalize();
-        //     if(selected_meshes.length > 0){
-        //         for(let mesh of selected_meshes)
-        //             mesh.position.addScaledVector(v, -pos_step);
-        //     }
-        //     else
-        //         group.position.addScaledVector(v, pos_step);
-        //     break;
-        // case 'a':
-        //     v = getProjection(right, floor_normal).normalize();
-        //     if(selected_meshes.length > 0){
-        //         for(let mesh of selected_meshes)
-        //             mesh.position.addScaledVector(v, -pos_step);
-        //     }
-        //     else
-        //         group.position.addScaledVector(v, pos_step);
-        //     break;
-        // case 'd':
-        //     v = getProjection(right, floor_normal).normalize();
-        //     if(selected_meshes.length > 0){
-        //         for(let mesh of selected_meshes)
-        //             mesh.position.addScaledVector(v, pos_step);
-        //     }
-        //     else
-        //         group.position.addScaledVector(v, -pos_step);
-        //     break;
-        // case 'q':
-        //     v = up.clone().sub(getProjection(up, floor_normal)).normalize();
-        //     if(selected_meshes.length > 0){
-        //         for(let mesh of selected_meshes)
-        //             mesh.position.addScaledVector(v, -pos_step);
-        //     }
-        //     else
-        //         group.position.addScaledVector(v, -pos_step);
-        //     break;
-        // case 'e':
-        //     v = up.clone().sub(getProjection(up, floor_normal)).normalize();
-        //     if(selected_meshes.length > 0){
-        //         for(let mesh of selected_meshes)
-        //             mesh.position.addScaledVector(v, pos_step);
-        //     }
-        //     else
-        //         group.position.addScaledVector(v, pos_step);
-        //     break;
         case 'c':
             if(selected_meshes.length > 0){
                 unselect();
                 break;
             }
-            if(pressedKeys.has('shift'))
+            if(pressedKeys.has('control')){
+                event.preventDefault();
                 uncancelModel();
+            }
             else
                 cancelModel();
             break;
@@ -490,8 +429,10 @@ function onKeyDown(event){
             break;
         case 'o':
             unselect();
-            if(pressedKeys.has('shift'))
+            if(pressedKeys.has('control')){
+                event.preventDefault();
                 pivot.rotation.set(0,0,0,'XYZ');
+            }
             else
                 group.position.set(0,0,0);
             break;
@@ -631,6 +572,8 @@ function unselect(){
     selected_meshes = [];
 }
 
+const pos_step = 0.3;
+
 function animate() {
     requestAnimationFrame(animate);
     renderer.render(scene, camera);
@@ -691,7 +634,7 @@ function animate() {
         else
             group.position.addScaledVector(v, -pos_step);
     }
-    else if(pressedKeys.has('e')){
+    else if(pressedKeys.has('e') || pressedKeys.has('shift')){
         v = up.clone().sub(getProjection(up, floor_normal)).normalize();
         if(selected_meshes.length > 0){
             for(let mesh of selected_meshes)
