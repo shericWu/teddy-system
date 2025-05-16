@@ -227,12 +227,12 @@ function onMouseMove(event) {
     if(intersects.length > 0){
         if(intersects[0].object == selected_meshes[selected_meshes.length - 1])
             cutting_mode = true;
-        else{
-            unselect();
-            invalidColor();
-            stopDrawing();
-            return;
-        }
+        // else{
+        //     unselect();
+        //     invalidColor();
+        //     stopDrawing();
+        //     return;
+        // }
     }
 
     // Check distance and self-intersection
@@ -370,8 +370,19 @@ function onMouseUp() {
     if (!drawing)
         return;
     if(cutting_mode){
-        updateLine();
         stopDrawing();
+        cutting_mode = false;
+
+        raycaster.setFromCamera( pointer, camera );
+        const intersects = raycaster.intersectObjects( scene.children );
+        for(let i = 0; i < intersects.length; i++){
+            const obj = intersects[i].object;
+            if(obj == selected_meshes[selected_meshes.length - 1]){
+                unselect();
+                invalidColor();
+                return;
+            }
+        }
 
         cutting_curve = [];
         for(let point of points){
@@ -379,7 +390,6 @@ function onMouseUp() {
         }
         // console.log(cutting_curve);
         cutting();
-        cutting_mode = false;
         scene.remove(line);
         unselect();
         return;
@@ -738,4 +748,8 @@ function animate(currentTime) {
 
     renderer.render(scene, camera);
     requestAnimationFrame(animate);
+}
+
+function cutting(){
+    alert("cut");
 }
