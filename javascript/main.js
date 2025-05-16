@@ -36,6 +36,9 @@ let canvas;
 let drawing = false;
 let view_mode = false;
 
+let cutting_mode = false;
+let cutting_curve = [];
+
 let points = [];
 
 /** @type {THREE.Line} */
@@ -207,17 +210,20 @@ function onMouseMove(event) {
         return;
     }
 
-    unselect();
-
     const newPt = new THREE.Vector3(pos3.x, pos3.y, 0);
 
-    // raycaster.setFromCamera( pointer, camera );
-	// const intersects = raycaster.intersectObjects( scene.children );
-    // if(intersects.filter((obj) => meshes.includes(obj.object)).length > 0){
-    //     invalidColor();
-    //     stopDrawing();
-    //     return;
-    // }
+    raycaster.setFromCamera( pointer, camera );
+	const intersects = raycaster.intersectObjects( scene.children ).filter((obj) => meshes.includes(obj.object));
+    if(intersects.length > 0){
+        if(intersects[0].object == selected_meshes[selected_meshes.length - 1])
+            cutting_mode = true;
+        else{
+            unselect();
+            invalidColor();
+            stopDrawing();
+            return;
+        }
+    }
 
     // Check distance and self-intersection
     const len = points.length;
@@ -233,6 +239,7 @@ function onMouseMove(event) {
             const b1 = points[i];
             const b2 = points[i + 1];
             if (segmentsIntersect(a1, a2, b1, b2)) {
+                unselect();
                 invalidColor();
                 stopDrawing();
                 return;
@@ -298,6 +305,7 @@ function createMeshModel(points){
 }
 
 function onLockChange(){
+    unselect();
     if (document.pointerLockElement === canvas) {
         view_mode = true;
         document.getElementById("mousePos").innerHTML = `View Mode`;
@@ -328,6 +336,21 @@ function view_control(event){
 function onMouseUp() {
     if (!drawing)
         return;
+    if(cutting_mode){
+        updateLine();
+        stopDrawing();
+
+        cutting_curve = [];
+        for(let point of points){
+            cutting_curve.push(new THREE.Vector2(point.x, point.y));
+        }
+        // console.log(cutting_curve);
+        cutting();
+        scene.remove(line);
+        unselect();
+        return;
+    }
+    unselect();
     if(!isValid()){
         invalidColor();
         stopDrawing();
@@ -342,6 +365,7 @@ function onMouseUp() {
 function onMouseLeave() {
     if (!drawing)
         return;
+    unselect();
     invalidColor();
     stopDrawing();
 }
