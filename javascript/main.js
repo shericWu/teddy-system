@@ -472,8 +472,8 @@ function onKeyDown(event){
             }
             break;
         case 'i':
-            let show = document.getElementById("infoBox");
-            show.style.display = show.style.display === 'none' ? '' : 'none';
+            let infoBox = document.getElementById("infoBox");
+            infoBox.style.display = infoBox.style.display === 'none' ? '' : 'none';
             break;
 
     }
