@@ -397,7 +397,7 @@ function onKeyUp(event) {
     pressedKeys.delete(event.key.toLowerCase());
 }
 
-const pos_step = 0.5;
+const pos_step = 0.1;
 
 function onKeyDown(event){
     pressedKeys.add(event.key.toLowerCase());
@@ -406,68 +406,68 @@ function onKeyDown(event){
 
     scene.remove(line);
 
-    let origin = pivot.worldToLocal(new THREE.Vector3(0, 0, 0));
-    let direction = pivot.worldToLocal(cameraDirection.clone()).sub(origin).normalize();
-    let right = pivot.worldToLocal(cameraRight.clone()).sub(origin).normalize();
-    let up = pivot.worldToLocal(cameraUp.clone()).sub(origin).normalize();
+    // let origin = pivot.worldToLocal(new THREE.Vector3(0, 0, 0));
+    // let direction = pivot.worldToLocal(cameraDirection.clone()).sub(origin).normalize();
+    // let right = pivot.worldToLocal(cameraRight.clone()).sub(origin).normalize();
+    // let up = pivot.worldToLocal(cameraUp.clone()).sub(origin).normalize();
 
-    let floor_normal = (new THREE.Vector3(0, 1, 0));
-    let v;
+    // let floor_normal = (new THREE.Vector3(0, 1, 0));
+    // let v;
     switch(event.key.toLowerCase()) {
-        case 'w':
-            v = getProjection(direction, floor_normal).normalize();
-            if(selected_meshes.length > 0){
-                for(let mesh of selected_meshes)
-                    mesh.position.addScaledVector(v, pos_step);
-            }
-            else
-                group.position.addScaledVector(v, -pos_step);
-            break;
-        case 's':
-            v = getProjection(direction, floor_normal).normalize();
-            if(selected_meshes.length > 0){
-                for(let mesh of selected_meshes)
-                    mesh.position.addScaledVector(v, -pos_step);
-            }
-            else
-                group.position.addScaledVector(v, pos_step);
-            break;
-        case 'a':
-            v = getProjection(right, floor_normal).normalize();
-            if(selected_meshes.length > 0){
-                for(let mesh of selected_meshes)
-                    mesh.position.addScaledVector(v, -pos_step);
-            }
-            else
-                group.position.addScaledVector(v, pos_step);
-            break;
-        case 'd':
-            v = getProjection(right, floor_normal).normalize();
-            if(selected_meshes.length > 0){
-                for(let mesh of selected_meshes)
-                    mesh.position.addScaledVector(v, pos_step);
-            }
-            else
-                group.position.addScaledVector(v, -pos_step);
-            break;
-        case 'q':
-            v = up.clone().sub(getProjection(up, floor_normal)).normalize();
-            if(selected_meshes.length > 0){
-                for(let mesh of selected_meshes)
-                    mesh.position.addScaledVector(v, -pos_step);
-            }
-            else
-                group.position.addScaledVector(v, -pos_step);
-            break;
-        case 'e':
-            v = up.clone().sub(getProjection(up, floor_normal)).normalize();
-            if(selected_meshes.length > 0){
-                for(let mesh of selected_meshes)
-                    mesh.position.addScaledVector(v, pos_step);
-            }
-            else
-                group.position.addScaledVector(v, pos_step);
-            break;
+        // case 'w':
+        //     v = getProjection(direction, floor_normal).normalize();
+        //     if(selected_meshes.length > 0){
+        //         for(let mesh of selected_meshes)
+        //             mesh.position.addScaledVector(v, pos_step);
+        //     }
+        //     else
+        //         group.position.addScaledVector(v, -pos_step);
+        //     break;
+        // case 's':
+        //     v = getProjection(direction, floor_normal).normalize();
+        //     if(selected_meshes.length > 0){
+        //         for(let mesh of selected_meshes)
+        //             mesh.position.addScaledVector(v, -pos_step);
+        //     }
+        //     else
+        //         group.position.addScaledVector(v, pos_step);
+        //     break;
+        // case 'a':
+        //     v = getProjection(right, floor_normal).normalize();
+        //     if(selected_meshes.length > 0){
+        //         for(let mesh of selected_meshes)
+        //             mesh.position.addScaledVector(v, -pos_step);
+        //     }
+        //     else
+        //         group.position.addScaledVector(v, pos_step);
+        //     break;
+        // case 'd':
+        //     v = getProjection(right, floor_normal).normalize();
+        //     if(selected_meshes.length > 0){
+        //         for(let mesh of selected_meshes)
+        //             mesh.position.addScaledVector(v, pos_step);
+        //     }
+        //     else
+        //         group.position.addScaledVector(v, -pos_step);
+        //     break;
+        // case 'q':
+        //     v = up.clone().sub(getProjection(up, floor_normal)).normalize();
+        //     if(selected_meshes.length > 0){
+        //         for(let mesh of selected_meshes)
+        //             mesh.position.addScaledVector(v, -pos_step);
+        //     }
+        //     else
+        //         group.position.addScaledVector(v, -pos_step);
+        //     break;
+        // case 'e':
+        //     v = up.clone().sub(getProjection(up, floor_normal)).normalize();
+        //     if(selected_meshes.length > 0){
+        //         for(let mesh of selected_meshes)
+        //             mesh.position.addScaledVector(v, pos_step);
+        //     }
+        //     else
+        //         group.position.addScaledVector(v, pos_step);
+        //     break;
         case 'c':
             if(selected_meshes.length > 0){
                 unselect();
@@ -634,4 +634,70 @@ function unselect(){
 function animate() {
     requestAnimationFrame(animate);
     renderer.render(scene, camera);
+
+    let origin = pivot.worldToLocal(new THREE.Vector3(0, 0, 0));
+    let direction = pivot.worldToLocal(cameraDirection.clone()).sub(origin).normalize();
+    let right = pivot.worldToLocal(cameraRight.clone()).sub(origin).normalize();
+    let up = pivot.worldToLocal(cameraUp.clone()).sub(origin).normalize();
+
+    let floor_normal = (new THREE.Vector3(0, 1, 0));
+    let v;
+
+    if(pressedKeys.has('w')){
+        v = getProjection(direction, floor_normal).normalize();
+        if(selected_meshes.length > 0){
+            for(let mesh of selected_meshes)
+                mesh.position.addScaledVector(v, pos_step);
+        }
+        else
+            group.position.addScaledVector(v, -pos_step);
+    }
+    else if(pressedKeys.has('s')){
+        v = getProjection(direction, floor_normal).normalize();
+        if(selected_meshes.length > 0){
+            for(let mesh of selected_meshes)
+                mesh.position.addScaledVector(v, -pos_step);
+        }
+        else
+            group.position.addScaledVector(v, pos_step);
+
+    }
+    if(pressedKeys.has('a')){
+        v = getProjection(right, floor_normal).normalize();
+        if(selected_meshes.length > 0){
+            for(let mesh of selected_meshes)
+                mesh.position.addScaledVector(v, -pos_step);
+        }
+        else
+            group.position.addScaledVector(v, pos_step);
+
+    }
+    else if(pressedKeys.has('d')){
+        v = getProjection(right, floor_normal).normalize();
+        if(selected_meshes.length > 0){
+            for(let mesh of selected_meshes)
+                mesh.position.addScaledVector(v, pos_step);
+        }
+        else
+            group.position.addScaledVector(v, -pos_step);
+
+    }
+    if(pressedKeys.has('q') || pressedKeys.has(' ')){
+        v = up.clone().sub(getProjection(up, floor_normal)).normalize();
+        if(selected_meshes.length > 0){
+            for(let mesh of selected_meshes)
+                mesh.position.addScaledVector(v, -pos_step);
+        }
+        else
+            group.position.addScaledVector(v, -pos_step);
+    }
+    else if(pressedKeys.has('e')){
+        v = up.clone().sub(getProjection(up, floor_normal)).normalize();
+        if(selected_meshes.length > 0){
+            for(let mesh of selected_meshes)
+                mesh.position.addScaledVector(v, pos_step);
+        }
+        else
+            group.position.addScaledVector(v, pos_step);
+    }
 }
