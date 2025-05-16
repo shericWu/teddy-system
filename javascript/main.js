@@ -399,8 +399,6 @@ function onKeyUp(event) {
     pressedKeys.delete(event.key.toLowerCase());
 }
 
-const pos_step = 20;
-
 function onKeyDown(event){
     pressedKeys.add(event.key.toLowerCase());
 
@@ -576,6 +574,7 @@ function unselect(){
     selected_meshes = [];
 }
 
+const pos_step = 20;
 
 function animate(currentTime) {
     if (!lastTime) lastTime = currentTime;
