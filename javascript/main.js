@@ -634,7 +634,7 @@ function animate(currentTime) {
         v = up.clone().sub(getProjection(up, floor_normal)).normalize();
         if(selected_meshes.length > 0){
             for(let mesh of selected_meshes)
-                mesh.position.addScaledVector(v, -pos_step * deltaTime);
+                mesh.position.addScaledVector(v, pos_step * deltaTime);
         }
         else
         group.position.addScaledVector(v, -pos_step * deltaTime);
@@ -643,7 +643,7 @@ function animate(currentTime) {
         v = up.clone().sub(getProjection(up, floor_normal)).normalize();
         if(selected_meshes.length > 0){
             for(let mesh of selected_meshes)
-                mesh.position.addScaledVector(v, pos_step * deltaTime);
+                mesh.position.addScaledVector(v, -pos_step * deltaTime);
         }
         else
         group.position.addScaledVector(v, pos_step * deltaTime);
