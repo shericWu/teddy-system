@@ -62,6 +62,25 @@ body {
     z-index: 100;
 }
 
+.infoPage {
+    display: none;
+    /* animation: fadeIn 0.3s ease; */
+}
+
+.infoPage.active {
+    display: block;
+}
+
+.pageControls {
+    text-align: center;
+    margin-top: 10px;
+}
+
+.pageControls button {
+    margin: 0 5px;
+    padding: 5px 10px;
+}
+
 hr{
     margin-top: 0.8em;
     margin-bottom: 0.8em;

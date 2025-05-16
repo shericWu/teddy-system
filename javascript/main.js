@@ -9,6 +9,7 @@ import { pruneTriangles } from './pruning.js';
 import { getCDT, showCDT } from './cdt.js';
 import { triangulate, Point } from './triangulation.js';
 import { inflate } from './inflation.js';
+import { onInfoButtomClick } from './infoBox.js';
 import { showTriangles } from './show.js';
 // import { CSG } from 'three-csg-ts';
 import {
@@ -472,8 +473,7 @@ function onKeyDown(event){
             }
             break;
         case 'i':
-            let infoBox = document.getElementById("infoBox");
-            infoBox.style.display = infoBox.style.display === 'none' ? '' : 'none';
+            onInfoButtomClick();
             break;
 
     }
