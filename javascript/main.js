@@ -160,8 +160,8 @@ function getMousePosition(event) {
      * x (left to right): -1 ~ 1
      * y (top to bottom): -1 ~ 1
      */
-    pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    pointer.x = (view_mode)? 0 : ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    pointer.y = (view_mode)? 0 : -((event.clientY - rect.top) / rect.height) * 2 + 1;
     const vec = new THREE.Vector3(pointer.x, pointer.y, 0.5);
     vec.unproject(camera);
     const dir = vec.sub(camera.position).normalize();
@@ -299,11 +299,13 @@ function onLockChange(){
     if (document.pointerLockElement === canvas) {
         view_mode = true;
         document.getElementById("mousePos").innerHTML = `View Mode`;
+        document.getElementById("crosshair").style.display = 'block';
         renderer.domElement.removeEventListener('mousemove', onMouseMove);
         renderer.domElement.removeEventListener('mousemove', view_control);
         renderer.domElement.addEventListener('mousemove', view_control);
     } else {
         view_mode = false;
+        document.getElementById("crosshair").style.display = 'none';
         renderer.domElement.removeEventListener('mousemove', view_control);
         renderer.domElement.removeEventListener('mousemove', onMouseMove);
         renderer.domElement.addEventListener('mousemove', onMouseMove);

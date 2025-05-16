@@ -7,6 +7,7 @@
     </head>
     <body>
         <span id="mousePos"></span>
+        <div id="crosshair">+</div>
         <script type="module" src="/javascript/triangle.js"></script>
         <script type="module" src="/javascript/pruning.js"></script>
         <script type="module" src="/javascript/cdt.js"></script>
@@ -16,7 +17,7 @@
         <script type="module" src="/javascript/main.js"></script>
         <aside id="infoBox">
             <p>control</p>
-            <div class="Option"><span class="Key">Left Click</span>draw an object</div>
+            <div class="Option"><span class="Key">Left Click + mouse</span>draw an object</div>
             <hr>
             <div class="Option"><span class="Key">W</span>moving forward</div>
             <div class="Option"><span class="Key">S</span>moving backward</div>
@@ -26,18 +27,23 @@
             <div class="Option"><span class="Key">E</span>moving down</div>
             <div class="Option"><span class="Key">O</span>move to the origin</div>
             <div class="Option"><span class="Key">Shift + O</span>face to the origin</div>
-            <div class="Option"><span class="Key">Ctrl</span>rotate</div>
+            <div class="Option"><span class="Key">Ctrl + mouse</span>rotate</div>
 
             <hr>
+            <p>cancel</p>
             <div class="Option"><span class="Key">C</span>cancel the object</div>
             <div class="Option"><span class="Key">Shift + C</span>uncancel an object</div>
             <hr>
+            <p>select</p>
             <div class="Option"><span class="Key">double click</span>select / unselect the object</div>
             <div class="Option"><span class="Key">U</span>union the last two selected object</div>
             <div class="Option"><span class="Key">Enter / C</span>unselect all objects</div>
             <hr>
+            <p>view mode</p>
             <div class="Option"><span class="Key">F</span>enter view mode</div>
+            <div class="Option"><span class="Key">F / Esc</span>exit view mode</div>
             <hr>
+            <p>infobox</p>
             <div class="Option"><span class="Key">I</span>open / close infobox</div>
         </aside>
     </body>
