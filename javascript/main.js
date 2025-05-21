@@ -19,7 +19,7 @@ import {
 } from 'three-mesh-bvh';
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { ADDITION, SUBTRACTION, Brush, Evaluator } from 'three-bvh-csg';
-import { timerDelta } from 'three/tsl';
+import { abs, timerDelta } from 'three/tsl';
 
 /** @type {THREE.Scene} */
 export let scene;
@@ -105,6 +105,7 @@ function init() {
     renderer.domElement.addEventListener('mouseleave', onMouseLeave);
     renderer.domElement.addEventListener('dblclick', onDoubleClick);
     window.addEventListener('resize', onWindowResize);
+    window.addEventListener('wheel', onWheel);
     document.addEventListener('keydown', onKeyDown);
     document.addEventListener('keyup', onKeyUp);
     document.addEventListener('pointerlockchange', onLockChange);
@@ -641,7 +642,7 @@ function splitMesh(position, index, original_material) {
             if (roots.indexOf(r) === -1)
                 roots.push(r);
         }
-        console.log("roots:", roots);
+        // console.log("roots:", roots);
         return roots;
     }
 
@@ -761,6 +762,14 @@ function cancelModel(){
     }
 }
 
+function onWheel(event){
+    if(selected_meshes.length > 0){
+        for(let mesh of selected_meshes){
+            mesh.scale.multiplyScalar(Math.tanh(event.deltaY / 1000) + 1);
+        }
+    }
+}
+
 function onDoubleClick(){
     if(drawing)
         return;
@@ -787,7 +796,7 @@ function onDoubleClick(){
 function select(mesh){
     selected_meshes.push(mesh);
     mesh.material.color.set(selected_mesh_color);
-    console.log(mesh.position);
+    // console.log(mesh.position);
 }
 
 function unselect(){
