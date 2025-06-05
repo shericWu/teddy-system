@@ -537,7 +537,7 @@ function getProjection(v, floor_normal){
 function getCutterBrush(line, mesh_pos) {
     // Parameters to control the cutting mesh
     const far_z = 50, near_z = 10, thickness = 0.01;
-    
+
     let cutter_pos = [];
     let cutter_index = [];
     const line_len = line.length;
@@ -570,7 +570,7 @@ function getCutterBrush(line, mesh_pos) {
         cutter_pos.push(far.x, far.y, far.z);
         cutter_pos.push(near.x, near.y, near.z);
     }
-    
+
     for (let i = 0; i < cutter_pos.length - 4; i += 4) {
         cutter_index.push(i, i+4, i+1);
         cutter_index.push(i+4, i+5, i+1);
@@ -586,7 +586,7 @@ function getCutterBrush(line, mesh_pos) {
     const last_i = cutter_pos.length - 4;
     cutter_index.push(last_i + 0, last_i + 3, last_i + 1);
     cutter_index.push(last_i + 3, last_i + 2, last_i + 1);
-    
+
     const cutter_geo = new THREE.BufferGeometry();
     cutter_geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(cutter_pos), 3));
     cutter_geo.setIndex(new THREE.BufferAttribute(new Uint32Array(cutter_index), 1));
@@ -603,7 +603,7 @@ function getCutterBrush(line, mesh_pos) {
 function splitMesh(position, index, original_material) {
     const parent_len = position.length / 3;
     let parent = new Int32Array(parent_len).fill(-1);
-    
+
     function find(i) {
         if (i >= parent_len) {
             console.log("error:", i, parent_len);
@@ -637,13 +637,31 @@ function splitMesh(position, index, original_material) {
 
     function getRoots() {
         let roots = [];
+        let mid_points = [];
+        let roots_vertex_num = [];
         for (let i = 0; i < parent_len; i++) {
             let r = find(i);
-            if (roots.indexOf(r) === -1)
+            if (roots.indexOf(r) === -1){
                 roots.push(r);
+                mid_points.push(new THREE.Vector3(0,0,0));
+                roots_vertex_num.push(0);
+            }
+            mid_points[roots.indexOf(r)].add(new THREE.Vector3(position[i*3], position[i*3+1], position[i*3+2]));
+            roots_vertex_num[roots.indexOf(r)]++;
         }
         // console.log("roots:", roots);
-        return roots;
+        for(let i = 0; i < roots.length; i++){
+            mid_points[i].multiplyScalar(1 / roots_vertex_num[i]);
+        }
+
+        for(let i = 0; i < parent_len; i++){
+            let r_idx = roots.indexOf(find(i));
+            position[i*3] -= mid_points[r_idx].x;
+            position[i*3+1] -= mid_points[r_idx].y;
+            position[i*3+2] -= mid_points[r_idx].z;
+
+        }
+        return [roots, mid_points];
     }
 
     const index_len = index.length;
@@ -652,7 +670,7 @@ function splitMesh(position, index, original_material) {
         merge(index[i+1], index[i+2])
         merge(index[i+2], index[i])
     }
-    let roots = getRoots();
+    let [roots, mid_points] = getRoots();
     let ret = [];
     for (let i = 0; i < roots.length; i++) {
         ret.push([new Float32Array(position), []])
@@ -676,6 +694,7 @@ function splitMesh(position, index, original_material) {
         geometry.computeVertexNormals();
         const mesh = new Brush(geometry, original_material.clone());
         geometry.computeBoundsTree();
+        mesh.position.copy(mid_points[i]);
         mesh.updateWorldMatrix();
         splitted.push(mesh);
     }
@@ -710,6 +729,12 @@ function cutting(mesh, line) {
 }
 
 function union_v2(mesh1, mesh2) {
+    const p_rotate = pivot.rotation.clone();
+    const g_pos = group.position.clone();
+    pivot.rotation.set(0,0,0,'XYZ');
+    group.position.set(0,0,0);
+
+
     group.remove(mesh1);
     group.remove(mesh2);
     meshes.splice(meshes.indexOf(mesh1), 1);
@@ -717,21 +742,31 @@ function union_v2(mesh1, mesh2) {
     selected_meshes.splice(selected_meshes.indexOf(mesh1), 1);
     selected_meshes.splice(selected_meshes.indexOf(mesh2), 1);
 
+    let midPoint = new THREE.Vector3().addVectors(mesh1.position.clone(), mesh2.position.clone()).multiplyScalar(0.5);
+    mesh1.position.sub(midPoint);
+    mesh2.position.sub(midPoint);
+    mesh1.updateWorldMatrix();
+    mesh2.updateWorldMatrix();
+
     let evaluator = new Evaluator();
     evaluator.attributes = ['position', 'normal'];
     let original_material = mesh1.material;
     let new_mesh = evaluator.evaluate(mesh1, mesh2, ADDITION);
     new_mesh.material = original_material.clone();
 
+    new_mesh.position.copy(midPoint);
     new_mesh.geometry.computeBoundsTree();
     new_mesh.updateWorldMatrix();
 
-    group.attach(new_mesh);
+    group.add(new_mesh);
     group.updateWorldMatrix();
     pivot.updateWorldMatrix();
     meshes.push(new_mesh);
     selected_meshes.push(new_mesh);
 
+
+    pivot.rotation.copy(p_rotate);
+    group.position.copy(g_pos);
     // console.log(new_mesh.position);
 }
 
