@@ -184,10 +184,19 @@ function getMousePosition(event) {
     return camera.position.clone().add(dir.multiplyScalar(distance));
 }
 
+let start_from_mesh = false;
 function onMouseDown(event) {
     mouse_down = true;
+    start_from_mesh = false;
 
     scene.remove(line);
+
+    raycaster.setFromCamera( pointer, camera );
+	const intersects = raycaster.intersectObjects( scene.children ).filter((obj) => meshes.includes(obj.object));
+    if(intersects.length > 0){
+        if(intersects[0].object == selected_meshes[selected_meshes.length - 1])
+            start_from_mesh = true;
+    }
 
     // Line geometry and material
     lineGeometry = new THREE.BufferGeometry();
@@ -374,6 +383,12 @@ function onMouseUp() {
     if(cutting_mode){
         stopDrawing();
         cutting_mode = false;
+
+        if(start_from_mesh){
+            unselect();
+            invalidColor();
+            return;
+        }
 
         raycaster.setFromCamera( pointer, camera );
         const intersects = raycaster.intersectObjects( scene.children );
