@@ -184,10 +184,19 @@ function getMousePosition(event) {
     return camera.position.clone().add(dir.multiplyScalar(distance));
 }
 
+let start_from_mesh = false;
 function onMouseDown(event) {
     mouse_down = true;
+    start_from_mesh = false;
 
     scene.remove(line);
+
+    raycaster.setFromCamera( pointer, camera );
+	const intersects = raycaster.intersectObjects( scene.children ).filter((obj) => meshes.includes(obj.object));
+    if(intersects.length > 0){
+        if(intersects[0].object == selected_meshes[selected_meshes.length - 1])
+            start_from_mesh = true;
+    }
 
     // Line geometry and material
     lineGeometry = new THREE.BufferGeometry();
@@ -313,15 +322,15 @@ function createMeshModel(points){
 
     const material = //new THREE.MeshPhongMaterial({ color: 0x3366ff, side: THREE.DoubleSide });
         new THREE.MeshPhysicalMaterial({
-        color: mesh_color,           // 白色基礎色
-        transmission: 0.6,         // 傳輸率 = 玻璃的透光度 (1.0 表完全透明)
-        opacity: 0.6,              // 不透明度 (與 transparent 一起使用)
-        transparent: true,         // 必須設 true 才能看到透明效果
-        roughness: 0.1,            // 粗糙度 (0 = 完美光滑)
-        metalness: 0.0,            // 金屬度 (玻璃為 0)
-        ior: 2,                  // 折射率 (玻璃常用值在 1.45 - 1.52)
-        thickness: 0.5,            // 厚度 (用於折射模擬)
-        side: THREE.DoubleSide     // 如果你有雙面幾何 (像鏡射)，建議使用
+        color: mesh_color,
+        transmission: 0.6,
+        opacity: 0.6, 
+        transparent: true, 
+        roughness: 0.1,
+        metalness: 0.0,
+        ior: 2, 
+        thickness: 0.5, 
+        side: THREE.DoubleSide
     });
     // const material = new THREE.MeshPhongMaterial({color: 0x3366ff});
     // const mesh = new THREE.Mesh(geometry, material);
@@ -374,6 +383,12 @@ function onMouseUp() {
     if(cutting_mode){
         stopDrawing();
         cutting_mode = false;
+
+        if(start_from_mesh){
+            unselect();
+            invalidColor();
+            return;
+        }
 
         raycaster.setFromCamera( pointer, camera );
         const intersects = raycaster.intersectObjects( scene.children );
@@ -842,7 +857,7 @@ function unselect(){
     selected_meshes = [];
 }
 
-const pos_step = 20;
+const pos_step = 10;
 const rot_step = 5;
 
 function animate(currentTime) {
